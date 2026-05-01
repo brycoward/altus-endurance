@@ -6,6 +6,8 @@ export const client = axios.create({
   baseURL: API_URL,
 });
 
+export const getBaseUrl = () => API_URL;
+
 // Interceptor to add the token to requests
 client.interceptors.request.use((config) => {
   const token = localStorage.getItem('altus_token');
@@ -58,4 +60,16 @@ export const api = {
     }).then(r => r.data);
   },
   getEnduranceDashboard: () => client.get('/api/endurance/dashboard').then(r => r.data),
+
+  // Data Portability
+  getBaseUrl: () => API_URL,
+  exportJson: () => client.get('/api/data/export/json', { responseType: 'blob' }).then(r => r.data),
+  exportCsv: () => client.get('/api/data/export/csv', { responseType: 'blob' }).then(r => r.data),
+  importData: (file: File, mode: 'merge' | 'replace') => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return client.post(`/api/data/import?mode=${mode}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }).then(r => r.data);
+  },
 };

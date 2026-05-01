@@ -13,6 +13,7 @@ import { UserSettings } from './components/UserSettings';
 import { AppSettings } from './components/AppSettings';
 import { ChatWidget } from './components/ChatWidget';
 import { EnduranceDashboard } from './components/EnduranceDashboard';
+import { DataPortability } from './components/DataPortability';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,7 +26,7 @@ const queryClient = new QueryClient({
 
 function MainApp() {
   const { token, isLoading } = useAuth();
-  const [activeView, setActiveView] = useState<'dashboard' | 'journal' | 'biometrics' | 'history' | 'endurance' | 'user-settings' | 'app-settings'>('dashboard');
+  const [activeView, setActiveView] = useState<'dashboard' | 'journal' | 'biometrics' | 'history' | 'endurance' | 'user-settings' | 'app-settings' | 'data-portability'>('dashboard');
   const [authView, setAuthView] = useState<'login' | 'register' | 'recovery'>('login');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -58,6 +59,7 @@ function MainApp() {
       <main className="flex-1 flex flex-col relative overflow-hidden">
         {activeView === 'dashboard' && <Dashboard />}
         {activeView === 'endurance' && <EnduranceDashboard />}
+        {activeView === 'data-portability' && <DataPortability />}
         
         {activeView === 'journal' && (
            <div className="flex-1 overflow-hidden flex flex-col">

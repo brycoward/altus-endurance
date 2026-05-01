@@ -6,6 +6,7 @@ from app.database import get_db, engine
 from app.models import User
 from app.api.v1 import router as v1_router
 from app.api.auth import router as auth_router
+from app.api.data import router as data_router
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
@@ -41,6 +42,7 @@ async def validation_exception_handler(request, exc):
 
 app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 app.include_router(v1_router, prefix="/api")
+app.include_router(data_router, prefix="/api/data", tags=["data"])
 
 
 

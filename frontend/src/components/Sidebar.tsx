@@ -35,6 +35,7 @@ export function Sidebar({ activeView, onViewChange, isCollapsed, setIsCollapsed 
   const settingItems = [
     { id: 'user-settings', label: 'User Settings', icon: User },
     { id: 'app-settings', label: 'App Settings', icon: Settings },
+    { id: 'data-portability', label: 'Import / Export', icon: Target },
   ];
 
   return (

@@ -1,0 +1,86 @@
+{
+  "generated_at": "2026-04-25T21:30:59.740267",
+  "user_profile": {
+    "age": 35,
+    "sex": "M",
+    "height_cm": 198.0,
+    "goal": {
+      "direction": "lose",
+      "weekly_rate_kg": -0.5,
+      "target_kcal": 1949.0625
+    }
+  },
+  "last_7_days": {
+    "avg_kcal_consumed": 2584.0,
+    "avg_kcal_burned": 2500.0,
+    "avg_balance": 1865.0625,
+    "adherence_pct": 0.0,
+    "best_day": "2026-04-25",
+    "worst_day": "2026-04-25",
+    "macro_averages": {
+      "protein_g": 119.9,
+      "carbs_g": 321.0,
+      "fat_g": 91.4
+    }
+  },
+  "today": {
+    "date": "2026-04-25",
+    "consumed_kcal": 2584.0,
+    "burned_kcal": 2500.0,
+    "balance_kcal": 1865.0625,
+    "entries": [
+      {
+        "slot": "Breakfast",
+        "description": "2 homemade waffles, 1 tbsp butter, 2 scrambled eggs",
+        "kcal": 680.0,
+        "protein_g": 22.0
+      },
+      {
+        "slot": "WorkoutFuel",
+        "description": "125g gatorade",
+        "kcal": 500.0,
+        "protein_g": 0.0
+      },
+      {
+        "slot": "WorkoutFuel",
+        "description": "2 scoops protein powder in 8 oz whole milk",
+        "kcal": 390.0,
+        "protein_g": 58.0
+      },
+      {
+        "slot": "Lunch",
+        "description": "pulled pork sandwich with vinegar cole slaw",
+        "kcal": 550.0,
+        "protein_g": 30.0
+      },
+      {
+        "slot": "Snack",
+        "description": "8 Girl Scout Trefoils cookies",
+        "kcal": 256.0,
+        "protein_g": 3.2
+      },
+      {
+        "slot": "Snack",
+        "description": "3 pieces of sushi roll",
+        "kcal": 150.0,
+        "protein_g": 6.0
+      },
+      {
+        "slot": "Snack",
+        "description": "65g banana",
+        "kcal": 58.0,
+        "protein_g": 0.7
+      }
+    ]
+  },
+  "health_trends": {
+    "latest_weight_kg": null,
+    "avg_hrv_7d": null
+  },
+  "patterns": {
+    "notes": [
+      "AI placeholder: No API key configured."
+    ]
+  },
+  "staleness_flags": []
+}

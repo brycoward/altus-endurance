@@ -1,0 +1,43 @@
+{
+  "generated_at": "2026-04-28T02:22:29.872802",
+  "user_profile": {
+    "age": 36,
+    "sex": "M",
+    "height_cm": 180.0,
+    "goal": {
+      "direction": "maintain",
+      "weekly_rate_kg": 0,
+      "target_kcal": 2000
+    }
+  },
+  "last_7_days": {
+    "avg_kcal_consumed": 0,
+    "avg_kcal_burned": 0,
+    "avg_balance": 0,
+    "adherence_pct": 0,
+    "best_day": null,
+    "worst_day": null,
+    "macro_averages": {
+      "protein_g": 0,
+      "carbs_g": 0,
+      "fat_g": 0
+    }
+  },
+  "today": {
+    "date": "2026-04-28",
+    "consumed_kcal": 0,
+    "burned_kcal": 0,
+    "balance_kcal": 0,
+    "entries": []
+  },
+  "health_trends": {
+    "latest_weight_kg": null,
+    "avg_hrv_7d": null
+  },
+  "patterns": {
+    "notes": [
+      "AI placeholder: No API key configured."
+    ]
+  },
+  "staleness_flags": []
+}

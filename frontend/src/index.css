@@ -1,0 +1,48 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Common */
+  --emerald: 16, 185, 129;
+  --purple: 109, 40, 217;
+  --crimson: 190, 18, 60;
+  
+  /* Light Theme */
+  --bg-primary: 248, 250, 252; /* slate-50 */
+  --bg-secondary: 255, 255, 255;
+  --bg-sidebar: 241, 245, 249; /* slate-100 */
+  --border: 226, 232, 240; /* slate-200 */
+  --text-primary: 15, 23, 42; /* slate-900 */
+  --text-secondary: 71, 85, 105; /* slate-600 */
+  --text-muted: 148, 163, 184; /* slate-400 */
+  --card-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.dark {
+  /* Dark Theme - Derived from the deep teal/navy in the logo */
+  --bg-primary: 5, 15, 15; 
+  --bg-secondary: 15, 25, 25;
+  --bg-sidebar: 10, 20, 20;
+  --border: 30, 45, 45;
+  --text-primary: 241, 245, 249; /* slate-100 */
+  --text-secondary: 148, 163, 184; /* slate-400 */
+  --text-muted: 71, 85, 105; /* slate-600 */
+  --card-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.5);
+}
+
+body {
+  background-color: rgb(var(--bg-primary));
+  color: rgb(var(--text-primary));
+  transition: background-color 0.3s, color 0.3s;
+}
+
+:root {
+  --brand-primary: rgb(var(--emerald));
+  --brand-secondary: rgb(var(--purple));
+  --brand-accent: rgb(var(--crimson));
+}
+
+img[src*="logo.png"] {
+  background-color: transparent !important;
+}

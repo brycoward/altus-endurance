@@ -16,7 +16,14 @@ from app.database import get_db
 from app.models import User
 
 # --- Configuration ---
-SECRET_KEY = os.getenv("SECRET_KEY", "super-secret-altus-key-for-dev-only")
+_raw_secret = os.getenv("SECRET_KEY")
+if not _raw_secret:
+    raise RuntimeError(
+        "SECRET_KEY environment variable is not set. "
+        "Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\" "
+        "and add it to your .env file."
+    )
+SECRET_KEY = _raw_secret
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 1 week
 

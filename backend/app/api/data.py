@@ -191,7 +191,10 @@ async def import_data(
     if mode not in ("merge", "replace"):
         raise HTTPException(status_code=400, detail="mode must be 'merge' or 'replace'")
 
-    content = await file.read()
+    MAX_IMPORT_BYTES = 50 * 1024 * 1024  # 50 MB
+    content = await file.read(MAX_IMPORT_BYTES + 1)
+    if len(content) > MAX_IMPORT_BYTES:
+        raise HTTPException(status_code=413, detail="Import file too large. Maximum size is 50 MB.")
     try:
         payload = json.loads(content)
     except json.JSONDecodeError:

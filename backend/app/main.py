@@ -19,13 +19,15 @@ app = FastAPI(title="Altus 2.0 API")
 async def log_requests(request: Request, call_next):
     start_time = time.time()
     response = await call_next(request)
-    duration = time.time() - start_time
-    print(f"DEBUG: {request.method} {request.url.path} - {response.status_code} ({duration:.2f}s)")
+    if os.getenv("DEBUG_REQUESTS", "false").lower() == "true":
+        duration = time.time() - start_time
+        print(f"DEBUG: {request.method} {request.url.path} - {response.status_code} ({duration:.2f}s)")
     return response
 
+_frontend_origin = os.getenv("FRONTEND_ORIGIN", "http://localhost:5174")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[_frontend_origin],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],

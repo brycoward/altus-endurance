@@ -54,8 +54,8 @@ export const LoginPage: React.FC<{ onRegisterClick: () => void, onRecoveryClick:
 
         <div className="relative">
           <div className="flex justify-center mb-8">
-            <div className="w-16 h-16 bg-emerald-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/40 rotate-12">
-                <span className="text-3xl font-black text-slate-950 -rotate-12">A</span>
+            <div className="w-16 h-16 flex items-center justify-center">
+                <img src="/logo.png?v=3" alt="Altus Logo" className="w-full h-full object-contain" />
             </div>
           </div>
 

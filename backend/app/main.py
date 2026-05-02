@@ -8,7 +8,9 @@ from app.api.v1 import router as v1_router
 from app.api.auth import router as auth_router
 from app.api.data import router as data_router
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from fastapi import Request
 import time
@@ -56,3 +58,13 @@ async def health_check():
 async def on_startup():
     # Placeholder for startup logic
     pass
+
+# SPA Static File Serving
+if os.path.exists("static"):
+    @app.exception_handler(StarletteHTTPException)
+    async def custom_404_handler(request: Request, exc: StarletteHTTPException):
+        if exc.status_code == 404 and not request.url.path.startswith("/api"):
+            return FileResponse("static/index.html")
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+    app.mount("/", StaticFiles(directory="static", html=True), name="static")

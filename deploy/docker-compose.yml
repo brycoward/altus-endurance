@@ -17,9 +17,7 @@ services:
     restart: always
 
   app:
-    build: 
-      context: ..
-      dockerfile: Dockerfile
+    image: ghcr.io/brycoward/altus-endurance:latest
     container_name: altus_endurance_app
     env_file: ../.env
     environment:
@@ -36,9 +34,7 @@ services:
     restart: always
 
   celery_worker:
-    build: 
-      context: ..
-      dockerfile: Dockerfile
+    image: ghcr.io/brycoward/altus-endurance:latest
     container_name: altus_endurance_celery
     command: celery -A app.tasks worker --loglevel=info
     env_file: ../.env
@@ -52,9 +48,7 @@ services:
     restart: always
 
   celery_beat:
-    build: 
-      context: ..
-      dockerfile: Dockerfile
+    image: ghcr.io/brycoward/altus-endurance:latest
     container_name: altus_endurance_beat
     command: celery -A app.tasks beat --loglevel=info
     env_file: ../.env

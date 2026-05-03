@@ -91,6 +91,7 @@ class UserUpdate(BaseModel):
     timezone: Optional[str] = None
     llm_api_key: Optional[str] = None
     llm_provider: Optional[str] = None
+    # LLM config now comes from .env — these are kept for backward compat but unused
     telegram_username: Optional[str] = None
     bmr_override: Optional[float] = None
     activity_multiplier: Optional[float] = None
@@ -141,12 +142,8 @@ class EstimateRequest(BaseModel):
 
 @router.post("/estimate")
 async def estimate_entry(request: EstimateRequest, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
-    user = current_user
-    llm_key = user.llm_api_key if user else None
-    llm_provider = user.llm_provider if user else "anthropic"
-    
     try:
-        parsed = await parse_log_message(request.text, api_key=llm_key, provider=llm_provider)
+        parsed = await parse_log_message(request.text)
     except Exception as e:
         print(f"Estimate LLM error: {e}")
         parsed = {"logs": [], "handoff": False}
@@ -414,12 +411,10 @@ async def chat_log(request: ChatRequest, db: AsyncSession = Depends(get_db), cur
     # 1. Fetch user to get API key and provider
     user = current_user
     user_id = user.id
-    llm_key = user.llm_api_key
-    llm_provider = user.llm_provider
     
-    # 2. Parse natural language
+    # 2. Parse natural language (LLM config from .env)
     try:
-        parsed = await parse_log_message(request.message, api_key=llm_key, provider=llm_provider)
+        parsed = await parse_log_message(request.message)
     except Exception as e:
         print(f"LLM parse error: {e}")
         parsed = {"logs": [], "handoff": False}
@@ -502,8 +497,6 @@ async def chat_log_with_image(
 ):
     user = current_user
     user_id = user.id
-    llm_key = user.llm_api_key
-    llm_provider = user.llm_provider
 
     image_b64 = None
     if file:
@@ -511,7 +504,7 @@ async def chat_log_with_image(
         image_b64 = base64.b64encode(content).decode('utf-8')
 
     try:
-        parsed = await parse_log_message(message, api_key=llm_key, provider=llm_provider, image_b64=image_b64)
+        parsed = await parse_log_message(message, image_b64=image_b64)
     except Exception as e:
         print(f"Log/image LLM error: {e}")
         parsed = {"logs": [], "handoff": False}
@@ -589,8 +582,6 @@ async def chat_log_with_image(
 async def chat_coach(request: ChatRequest, db: AsyncSession = Depends(get_db), current_user: User = Depends(get_current_user)):
     user = current_user
     user_id = user.id
-    llm_key = user.llm_api_key
-    llm_provider = user.llm_provider
 
     today = get_user_today(user)
     seven_days_ago = today - timedelta(days=7)
@@ -684,7 +675,7 @@ async def chat_coach(request: ChatRequest, db: AsyncSession = Depends(get_db), c
         },
     }
 
-    llm = LLMClient(api_key=llm_key, provider=llm_provider)
+    llm = LLMClient()
     system_prompt = (
         "You are Altus.Coach, an expert coaching assistant for endurance athletes. "
         "You analyze the gap between the athlete's current data and their goals, then "
@@ -1055,88 +1046,6 @@ async def generate_week_plan(
 ):
     user = current_user
     user_id = user.id
-    llm_key = user.llm_api_key
-    llm_provider = user.llm_provider
-
-    if date:
-        target = date_type.fromisoformat(date)
-    else:
-        target = get_user_today(user)
-    week_start = target - timedelta(days=target.weekday())
-
-    # Collect context for the LLM
-    phys_stmt = select(UserPhysiology).where(UserPhysiology.user_id == user_id)
-    physiology = (await db.execute(phys_stmt)).scalars().first()
-    goal_stmt = select(EnduranceGoal).where(EnduranceGoal.user_id == user_id)
-    goal = (await db.execute(goal_stmt)).scalars().first()
-
-    start_42 = target - timedelta(days=42)
-    start_42_dt = datetime.combine(start_42, datetime.min.time())
-    act_stmt = select(ActivityLog).where(
-        ActivityLog.user_id == user_id, ActivityLog.timestamp >= start_42_dt
-    )
-    recent = (await db.execute(act_stmt)).scalars().all()
-
-    act_dicts = []
-    for a in recent:
-        zm_stmt = select(ZoneMetrics).where(ZoneMetrics.activity_id == a.id)
-        zm = (await db.execute(zm_stmt)).scalars().first()
-        kj = zm.total_kj if zm else (a.kcal_burned * 4.184 * 0.25)
-        act_dicts.append({"date": a.timestamp.date(), "total_kj": kj})
-    ltw, stw = EnduranceEngine.calculate_rolling_averages(act_dicts)
-    readiness = calculate_readiness(ltw, stw)
-
-    context = {
-        "week_start": week_start.isoformat(),
-        "lt1_power": physiology.lt1_power if physiology else 150,
-        "lt2_power": physiology.lt2_power if physiology else 200,
-        "target_event_kj": goal.target_event_kj if goal else 0,
-        "readiness": readiness,
-        "ltw_kj_per_day": round(ltw, 1),
-        "stw_kj_per_day": round(stw, 1),
-        "intensity_distribution": "80% Z1-Z2 (endurance), 20% Z3+ (intensity)",
-        "available_types": ["Ride", "Run", "Swim", "Strength", "Hike", "Walk", "Yoga", "Rest"],
-    }
-
-    llm = LLMClient(api_key=llm_key, provider=llm_provider)
-    system_prompt = (
-        "You are Altus.Planner, a training plan generator for endurance athletes. "
-        "Given the athlete's physiology data, readiness status, and goals, generate a "
-        "7-day training plan. Each day should have zero or one workout. Include rest days. "
-        "Week starts Monday. Output ONLY valid JSON with this schema: "
-        '{"workouts": [{"date": "YYYY-MM-DD", "planned_type": "Ride"|"Run"|etc|"Rest", '
-        '"planned_duration_min": number, "planned_kj": number, "notes": string}]}'
-    )
-    prompt = f"Athlete context: {json.dumps(context)}. Generate a 7-day plan starting {week_start.isoformat()}."
-
-    try:
-        resp = await llm.complete(prompt, system_prompt)
-        plan = json.loads(resp.split("```json")[1].split("```")[0].strip() if "```" in resp else resp)
-        return {"week_start": week_start.isoformat(), "workouts": plan.get("workouts", [])}
-    except Exception:
-        return {"week_start": week_start.isoformat(), "workouts": [], "error": "LLM generation failed. Set goals and physiology data first."}
-
-# --- Goal Coach & Performance Goals ---
-
-@router.post("/goals/coach")
-async def goals_coach(
-    request: ChatRequest,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    user = current_user
-    user_id = user.id
-    llm_key = user.llm_api_key
-    llm_provider = user.llm_provider
-
-    goal_stmt = select(UserGoal).where(UserGoal.user_id == user_id).order_by(UserGoal.updated_at.desc())
-    current_goal = (await db.execute(goal_stmt)).scalars().first()
-
-    phys_stmt = select(UserPhysiology).where(UserPhysiology.user_id == user_id)
-    physiology = (await db.execute(phys_stmt)).scalars().first()
-
-    endurance_stmt = select(EnduranceGoal).where(EnduranceGoal.user_id == user_id)
-    endurance_goal = (await db.execute(endurance_stmt)).scalars().first()
 
     latest_weight = 75
     health_stmt = select(HealthMetric).where(
@@ -1167,7 +1076,7 @@ async def goals_coach(
         } if endurance_goal or physiology else None,
     }
 
-    llm = LLMClient(api_key=llm_key, provider=llm_provider)
+    llm = LLMClient()
     system_prompt = (
         "You are Altus.Goals, a goal-setting coach for endurance athletes. "
         "Help the user establish clear, measurable goals for body composition and performance. "

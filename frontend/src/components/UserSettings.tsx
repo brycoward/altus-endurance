@@ -15,8 +15,6 @@ export function UserSettings() {
     height_cm: 180,
     sex: 'M',
     timezone: 'UTC',
-    llm_api_key: '',
-    llm_provider: 'anthropic',
     telegram_username: '',
     bmr_override: 0,
     activity_multiplier: 1.2,
@@ -46,8 +44,6 @@ export function UserSettings() {
         height_cm: user.height_cm || 180,
         sex: user.sex || 'M',
         timezone: user.timezone || 'UTC',
-        llm_api_key: user.llm_api_key || '',
-        llm_provider: user.llm_provider || 'anthropic',
         telegram_username: user.telegram_username || '',
         bmr_override: user.bmr_override || 0,
         activity_multiplier: user.activity_multiplier || 1.2,
@@ -251,30 +247,6 @@ export function UserSettings() {
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 uppercase">LLM Provider</label>
-                <select
-                  value={formData.llm_provider}
-                  onChange={(e) => setFormData({ ...formData, llm_provider: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-slate-100"
-                >
-                   <option value="anthropic">Anthropic (Claude)</option>
-                   <option value="openai">OpenAI (GPT)</option>
-                   <option value="deepseek">DeepSeek</option>
-                   <option value="google">Google (Gemini)</option>
-                </select>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-slate-500 uppercase">LLM API Key</label>
-                <input
-                  type="password"
-                  placeholder="Paste key..."
-                  value={formData.llm_api_key}
-                  onChange={(e) => setFormData({ ...formData, llm_api_key: e.target.value })}
-                  className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-slate-100"
-                />
-              </div>
             </div>
           )}
 

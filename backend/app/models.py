@@ -45,6 +45,7 @@ class User(SQLModel, table=True):
 
     llm_api_key: Optional[str] = None
     llm_provider: str = Field(default="anthropic")
+    # LLM config now comes from .env — user-specific keys removed
     telegram_username: Optional[str] = None
     telegram_chat_id: Optional[str] = None
     bmr_override: Optional[float] = None

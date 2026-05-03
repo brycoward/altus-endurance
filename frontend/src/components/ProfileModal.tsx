@@ -17,8 +17,6 @@ export function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
     height_cm: 180,
     sex: 'M',
     timezone: 'UTC',
-    llm_api_key: '',
-    llm_provider: 'anthropic',
     telegram_username: '',
     bmr_override: 0,
     unit_system: 'metric'
@@ -37,8 +35,6 @@ export function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         height_cm: user.height_cm || 180,
         sex: user.sex || 'M',
         timezone: user.timezone || 'UTC',
-        llm_api_key: user.llm_api_key || '',
-        llm_provider: user.llm_provider || 'anthropic',
         telegram_username: user.telegram_username || '',
         bmr_override: user.bmr_override || 0,
         unit_system: user.unit_system || 'metric',
@@ -252,32 +248,6 @@ export function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                         >
                             Imperial
                         </button>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-500 uppercase">LLM Provider</label>
-                        <select
-                            value={formData.llm_provider}
-                            onChange={(e) => setFormData({ ...formData, llm_provider: e.target.value })}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-slate-100"
-                        >
-                            <option value="anthropic">Anthropic (Claude)</option>
-                            <option value="openai">OpenAI (GPT)</option>
-                            <option value="deepseek">DeepSeek</option>
-                            <option value="google">Google (Gemini)</option>
-                        </select>
-                    </div>
-                    <div className="space-y-1">
-                        <label className="text-xs font-bold text-slate-500 uppercase">LLM API Key</label>
-                        <input
-                            type="password"
-                            placeholder="Paste key..."
-                            value={formData.llm_api_key}
-                            onChange={(e) => setFormData({ ...formData, llm_api_key: e.target.value })}
-                            className="w-full bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 text-slate-100"
-                        />
                     </div>
                 </div>
                 </div>

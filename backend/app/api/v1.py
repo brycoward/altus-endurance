@@ -12,7 +12,8 @@ from app.llm import LLMClient
 from app.models import (
     User, UserGoal, FoodLog, ActivityLog, HealthMetric, 
     DailySnapshot, MealSlot, GoalDirection, SexEnum,
-    EnduranceGoal, WeeklyPlanner, PlannedWorkout, ZoneMetrics, UserPhysiology
+    EnduranceGoal, WeeklyPlanner, PlannedWorkout, ZoneMetrics, UserPhysiology,
+    FitnessSignature, ActivityStress, DailyLoad
 )
 from app.budget import recalculate_daily_snapshot
 from pydantic import BaseModel, validator
@@ -24,6 +25,7 @@ router = APIRouter()
 from app.utils import get_user_now, get_user_today, get_user_local_date, get_utc_range_for_date
 from app.fit_parser import FitParser
 from app.endurance_engine import EnduranceEngine, calculate_readiness
+from app.fitness_engine import calculate_mpa, calculate_ftp_from_df, calculate_hie, classify_stress, detect_breakthrough, apply_decay, recalc_daily_load
 import tempfile
 
 # --- Schemas ---
@@ -756,11 +758,114 @@ async def upload_fit_file(
             total_kj=metrics["total_kj"]
         )
         db.add(zone_metrics)
-        await db.commit()
 
+        # --- Fitness Signature Pipeline ---
+        sig_stmt = select(FitnessSignature).where(FitnessSignature.user_id == user_id)
+        signature = (await db.execute(sig_stmt)).scalars().first()
+        if not signature:
+            signature = FitnessSignature(user_id=user_id)
+            db.add(signature)
+            await db.commit()
+            await db.refresh(signature)
+
+        now = datetime.utcnow()
+        decayed_mpa = apply_decay(signature.mpa_watts, signature.last_mpa_date, signature.decay_half_life_mpa, now)
+        decayed_ftp = apply_decay(signature.ftp_watts, signature.last_ftp_date, signature.decay_half_life_ftp, now)
+        decayed_hie = apply_decay(signature.hie_kj, signature.last_hie_date, signature.decay_half_life_hie, now)
+
+        observed_mpa = calculate_mpa(parser.df)
+        observed_ftp = calculate_ftp_from_df(parser.df)
+        observed_hie = calculate_hie(parser.df, decayed_ftp if decayed_ftp > 0 else physiology.lt2_power)
+
+        stress = classify_stress(parser.df, decayed_ftp if decayed_ftp > 0 else physiology.lt2_power)
+
+        breakthrough_level, was_breakthrough, new_mpa, new_ftp, new_hie = detect_breakthrough(
+            observed_mpa, observed_ftp, observed_hie, decayed_mpa, decayed_ftp, decayed_hie
+        )
+
+        if was_breakthrough:
+            signature.mpa_watts = new_mpa
+            signature.ftp_watts = new_ftp
+            signature.hie_kj = new_hie
+            if observed_mpa > decayed_mpa:
+                signature.last_mpa_date = now
+            if observed_ftp > decayed_ftp:
+                signature.last_ftp_date = now
+            if observed_hie > decayed_hie:
+                signature.last_hie_date = now
+            signature.last_breakthrough_at = now
+            signature.last_breakthrough_level = breakthrough_level
+        signature.updated_at = now
+        db.add(signature)
+
+        stress_entry = ActivityStress(
+            activity_id=activity.id,
+            low_stress_kj=stress["low_stress_kj"],
+            high_stress_kj=stress["high_stress_kj"],
+            peak_stress_kj=stress["peak_stress_kj"],
+            observed_mpa=observed_mpa,
+            observed_ftp=observed_ftp,
+            observed_hie=observed_hie,
+            breakthrough_level=breakthrough_level,
+            was_breakthrough=was_breakthrough,
+        )
+        db.add(stress_entry)
+
+        # Recalculate daily load (CTL/ATL/TSB)
+        date = activity.timestamp.date()
+        prev_load = (await db.execute(select(DailyLoad).where(
+            DailyLoad.user_id == user_id, DailyLoad.date < date
+        ).order_by(DailyLoad.date.desc()))).scalars().first()
+        prev_ctl = prev_load.ctl if prev_load else 0.0
+        prev_atl = prev_load.atl if prev_load else 0.0
+
+        current_load = (await db.execute(select(DailyLoad).where(
+            DailyLoad.user_id == user_id, DailyLoad.date == date
+        ))).scalars().first()
+
+        total_stress = stress["low_stress_kj"] + stress["high_stress_kj"] + stress["peak_stress_kj"]
+        load_data = recalc_daily_load(user_id, date, total_stress, stress["low_stress_kj"], stress["high_stress_kj"], stress["peak_stress_kj"], prev_ctl, prev_atl)
+
+        if current_load:
+            current_load.daily_stress_kj += total_stress
+            current_load.low_stress_kj += stress["low_stress_kj"]
+            current_load.high_stress_kj += stress["high_stress_kj"]
+            current_load.peak_stress_kj += stress["peak_stress_kj"]
+            current_load.ctl = load_data["ctl"]
+            current_load.atl = load_data["atl"]
+            current_load.tsb = load_data["tsb"]
+            db.add(current_load)
+        else:
+            db.add(DailyLoad(
+                user_id=user_id, date=date,
+                daily_stress_kj=total_stress,
+                low_stress_kj=stress["low_stress_kj"],
+                high_stress_kj=stress["high_stress_kj"],
+                peak_stress_kj=stress["peak_stress_kj"],
+                ctl=load_data["ctl"], atl=load_data["atl"], tsb=load_data["tsb"],
+            ))
+
+        await db.commit()
         await recalculate_daily_snapshot(user_id, get_user_today(current_user), db)
 
-        return {"status": "success", "metrics": metrics, "new_lt1": physiology.lt1_power, "new_lt2": physiology.lt2_power}
+        return {
+            "status": "success",
+            "metrics": metrics,
+            "fitness": {
+                "observed_mpa": round(observed_mpa, 1),
+                "observed_ftp": round(observed_ftp, 1),
+                "observed_hie": round(observed_hie, 1),
+                "breakthrough_level": breakthrough_level,
+                "was_breakthrough": was_breakthrough,
+                "decayed_mpa": round(decayed_mpa, 1),
+                "decayed_ftp": round(decayed_ftp, 1),
+                "decayed_hie": round(decayed_hie, 1),
+            },
+            "stress": stress,
+            "load": load_data,
+            "new_lt1": physiology.lt1_power,
+            "new_lt2": physiology.lt2_power,
+        }
     finally:
         os.unlink(temp_file_path)
 
@@ -877,8 +982,10 @@ async def get_calendar_week(
         act_results = (await db.execute(act_stmt)).all()
 
         activities = []
+        act_ids = []
         for act, zm in act_results:
             has_zones = zm is not None
+            act_ids.append(act.id)
             activities.append({
                 "id": act.id,
                 "type": act.type,
@@ -891,6 +998,18 @@ async def get_calendar_week(
                 "z3_kj": zm.z3_kj if has_zones else 0,
                 "z4_kj": zm.z4_kj if has_zones else 0,
             })
+
+        # Add breakthrough data
+        if act_ids:
+            stress_results = (await db.execute(select(ActivityStress).where(
+                ActivityStress.activity_id.in_(act_ids)
+            ))).scalars().all()
+            stress_map = {s.activity_id: s for s in stress_results}
+            for a in activities:
+                s = stress_map.get(a["id"])
+                if s:
+                    a["breakthrough_level"] = s.breakthrough_level
+                    a["was_breakthrough"] = s.was_breakthrough
 
         planned_stmt = select(PlannedWorkout).where(
             PlannedWorkout.user_id == user_id,
@@ -1418,3 +1537,101 @@ async def get_analysis_dashboard(
             "days_with_activity": len([d for d in daily_acts.values() if d["total_kj"] > 0]),
         },
     }
+
+# --- Fitness Signature Endpoints ---
+
+@router.get("/fitness/signature")
+async def get_fitness_signature(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    user_id = current_user.id
+    sig_stmt = select(FitnessSignature).where(FitnessSignature.user_id == user_id)
+    signature = (await db.execute(sig_stmt)).scalars().first()
+    if not signature:
+        raise HTTPException(status_code=404, detail="No fitness signature yet. Upload a FIT file.")
+
+    now = datetime.utcnow()
+    decayed_mpa = apply_decay(signature.mpa_watts, signature.last_mpa_date, signature.decay_half_life_mpa, now)
+    decayed_ftp = apply_decay(signature.ftp_watts, signature.last_ftp_date, signature.decay_half_life_ftp, now)
+    decayed_hie = apply_decay(signature.hie_kj, signature.last_hie_date, signature.decay_half_life_hie, now)
+
+    breakthrough_stmt = select(ActivityStress, ActivityLog).join(
+        ActivityLog, ActivityStress.activity_id == ActivityLog.id
+    ).where(
+        ActivityLog.user_id == user_id, ActivityStress.was_breakthrough == True
+    ).order_by(ActivityLog.timestamp.desc()).limit(10)
+    breakthroughs = (await db.execute(breakthrough_stmt)).all()
+
+    return {
+        "peak": {"mpa": round(signature.mpa_watts, 1), "ftp": round(signature.ftp_watts, 1), "hie": round(signature.hie_kj, 1)},
+        "decayed": {"mpa": round(decayed_mpa, 1), "ftp": round(decayed_ftp, 1), "hie": round(decayed_hie, 1)},
+        "last_breakthrough_at": signature.last_breakthrough_at.isoformat() if signature.last_breakthrough_at else None,
+        "last_breakthrough_level": signature.last_breakthrough_level,
+        "breakthroughs": [{
+            "date": b[1].timestamp.isoformat(),
+            "level": b[0].breakthrough_level,
+        } for b in breakthroughs],
+        "decay_config": {"mpa_half_life_days": signature.decay_half_life_mpa, "ftp_half_life_days": signature.decay_half_life_ftp, "hie_half_life_days": signature.decay_half_life_hie},
+    }
+
+
+@router.get("/fitness/chronic")
+async def get_fitness_chronic(
+    days: int = 90,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    user_id = current_user.id
+    user = current_user
+    today = get_user_today(user)
+
+    start = today - timedelta(days=days)
+    load_stmt = select(DailyLoad).where(
+        DailyLoad.user_id == user_id, DailyLoad.date >= start
+    ).order_by(DailyLoad.date)
+    loads = (await db.execute(load_stmt)).scalars().all()
+
+    return [{
+        "date": l.date.isoformat(),
+        "daily_stress_kj": l.daily_stress_kj,
+        "low_stress_kj": l.low_stress_kj,
+        "high_stress_kj": l.high_stress_kj,
+        "peak_stress_kj": l.peak_stress_kj,
+        "ctl": l.ctl, "atl": l.atl, "tsb": l.tsb,
+    } for l in loads]
+
+
+@router.get("/fitness/stress")
+async def get_fitness_stress(
+    days: int = 90,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    user_id = current_user.id
+    user = current_user
+    today = get_user_today(user)
+    start = today - timedelta(days=days)
+
+    stress_stmt = select(ActivityStress, ActivityLog).join(
+        ActivityLog, ActivityStress.activity_id == ActivityLog.id
+    ).where(
+        ActivityLog.user_id == user_id,
+        ActivityLog.timestamp >= datetime.combine(start, datetime.min.time())
+    ).order_by(ActivityLog.timestamp.desc())
+    results = (await db.execute(stress_stmt)).all()
+
+    return [{
+        "activity_id": r[1].id,
+        "date": r[1].timestamp.isoformat(),
+        "type": r[1].type,
+        "duration_min": r[1].duration_min,
+        "low_stress_kj": r[0].low_stress_kj,
+        "high_stress_kj": r[0].high_stress_kj,
+        "peak_stress_kj": r[0].peak_stress_kj,
+        "observed_mpa": r[0].observed_mpa,
+        "observed_ftp": r[0].observed_ftp,
+        "observed_hie": r[0].observed_hie,
+        "breakthrough_level": r[0].breakthrough_level,
+        "was_breakthrough": r[0].was_breakthrough,
+    } for r in results]

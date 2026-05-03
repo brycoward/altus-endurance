@@ -13,7 +13,8 @@ import {
   CalendarDays,
   Crosshair,
   ScrollText,
-  BarChart3
+  BarChart3,
+  Zap
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuth } from '../context/AuthContext';
@@ -35,6 +36,7 @@ export function Sidebar({ activeView, onViewChange, isCollapsed, setIsCollapsed 
     { id: 'analysis', label: 'Data Analysis', icon: BarChart3 },
     { id: 'goals', label: 'Goals', icon: Crosshair },
     { id: 'endurance', label: 'Performance', icon: Target },
+    { id: 'fitness', label: 'Fitness Signature', icon: Zap },
     { id: 'journal', label: 'Nutrition Journal', icon: BookOpen },
     { id: 'biometrics', label: 'Biometrics', icon: Scale },
     { id: 'history', label: 'Historic Data', icon: Calendar },

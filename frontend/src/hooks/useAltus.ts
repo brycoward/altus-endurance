@@ -281,3 +281,22 @@ export function useAnalysisDashboard(days: number = 90) {
     refetchInterval: 60000,
   });
 }
+
+export function useFitnessSignature() {
+  return useQuery(['fitnessSignature'], () => api.getFitnessSignature(), {
+    refetchInterval: 30000,
+    retry: false,
+  });
+}
+
+export function useFitnessChronic(days: number = 90) {
+  return useQuery(['fitnessChronic', days], () => api.getFitnessChronic(days), {
+    refetchInterval: 60000,
+  });
+}
+
+export function useFitnessStress(days: number = 90) {
+  return useQuery(['fitnessStress', days], () => api.getFitnessStress(days), {
+    refetchInterval: 60000,
+  });
+}

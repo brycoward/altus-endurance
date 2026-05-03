@@ -20,6 +20,7 @@ import { GoalCoach } from './components/GoalCoach';
 import { GoalProgressDashboard } from './components/GoalProgressDashboard';
 import { WeeklyRecap } from './components/WeeklyRecap';
 import { DataAnalysis } from './components/DataAnalysis';
+import { FitnessDashboard } from './components/FitnessDashboard';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -32,7 +33,7 @@ const queryClient = new QueryClient({
 
 function MainApp() {
   const { token, isLoading } = useAuth();
-  const [activeView, setActiveView] = useState<'calendar' | 'dashboard' | 'journal' | 'biometrics' | 'history' | 'endurance' | 'goals' | 'recap' | 'analysis' | 'user-settings' | 'app-settings' | 'data-portability'>('calendar');
+  const [activeView, setActiveView] = useState<'calendar' | 'dashboard' | 'journal' | 'biometrics' | 'history' | 'endurance' | 'fitness' | 'goals' | 'recap' | 'analysis' | 'user-settings' | 'app-settings' | 'data-portability'>('calendar');
   const [authView, setAuthView] = useState<'login' | 'register' | 'recovery'>('login');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -66,6 +67,7 @@ function MainApp() {
         {activeView === 'calendar' && <CalendarDashboard />}
         {activeView === 'dashboard' && <Dashboard />}
         {activeView === 'endurance' && <EnduranceDashboard />}
+        {activeView === 'fitness' && <FitnessDashboard />}
         {activeView === 'goals' && (
           <div className="flex-1 overflow-y-auto bg-[rgb(var(--bg-primary))]">
             <GoalProgressDashboard />

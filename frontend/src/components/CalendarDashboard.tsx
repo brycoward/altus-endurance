@@ -27,6 +27,8 @@ const typeColors: Record<string, string> = {
   Other: 'text-slate-400 bg-slate-500/10 border-slate-500/20',
 };
 
+const MEDAL_EMOJI: Record<number, string> = { 1: '🥉', 2: '🥈', 3: '🥇' };
+
 function getMonday(d: Date): Date {
   const date = new Date(d);
   const day = date.getDay();
@@ -250,6 +252,9 @@ export function CalendarDashboard() {
                       <div key={j} className={clsx("mb-1 px-1.5 py-0.5 rounded text-[8px] font-bold flex items-center gap-1 border", colorClass)}>
                         <Icon size={10} />
                         {a.type} {a.duration_min}m
+                        {a.was_breakthrough && a.breakthrough_level > 0 && (
+                          <span className="ml-0.5 text-[10px]">{MEDAL_EMOJI[a.breakthrough_level]}</span>
+                        )}
                         <span className="opacity-60 ml-auto">{Math.round(a.total_kj)}kJ</span>
                       </div>
                     );

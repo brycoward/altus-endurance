@@ -62,6 +62,7 @@ class User(SQLModel, table=True):
     weekly_planners: list["WeeklyPlanner"] = Relationship(back_populates="user")
     planned_workouts: list["PlannedWorkout"] = Relationship(back_populates="user")
     physiology: Optional["UserPhysiology"] = Relationship(back_populates="user")
+    fitness_signature: Optional["FitnessSignature"] = Relationship(back_populates="user")
 
 class UserGoal(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -110,6 +111,7 @@ class ActivityLog(SQLModel, table=True):
     
     user: User = Relationship(back_populates="activity_logs")
     zone_metrics: Optional["ZoneMetrics"] = Relationship(back_populates="activity")
+    stress_metrics: Optional["ActivityStress"] = Relationship(back_populates="activity")
 
 class HealthMetric(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -215,3 +217,48 @@ class DailySnapshot(SQLModel, table=True):
     calcium_mg: float = Field(default=0.0)
     potassium_mg: float = Field(default=0.0)
     weight_kg: Optional[float] = Field(default=None)
+
+# --- Fitness Signature Models ---
+
+class FitnessSignature(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: uuid.UUID = Field(foreign_key="user.id", unique=True)
+    mpa_watts: float = Field(default=0.0)
+    ftp_watts: float = Field(default=0.0)
+    hie_kj: float = Field(default=0.0)
+    last_mpa_date: Optional[datetime] = None
+    last_ftp_date: Optional[datetime] = None
+    last_hie_date: Optional[datetime] = None
+    last_breakthrough_at: Optional[datetime] = None
+    last_breakthrough_level: int = Field(default=0)
+    decay_half_life_mpa: float = Field(default=14.0)
+    decay_half_life_ftp: float = Field(default=30.0)
+    decay_half_life_hie: float = Field(default=21.0)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    user: User = Relationship(back_populates="fitness_signature")
+
+class ActivityStress(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    activity_id: int = Field(foreign_key="activitylog.id", unique=True)
+    low_stress_kj: float = Field(default=0.0)
+    high_stress_kj: float = Field(default=0.0)
+    peak_stress_kj: float = Field(default=0.0)
+    observed_mpa: float = Field(default=0.0)
+    observed_ftp: float = Field(default=0.0)
+    observed_hie: float = Field(default=0.0)
+    breakthrough_level: int = Field(default=0)
+    was_breakthrough: bool = Field(default=False)
+
+    activity: ActivityLog = Relationship(back_populates="stress_metrics")
+
+class DailyLoad(SQLModel, table=True):
+    user_id: uuid.UUID = Field(foreign_key="user.id", primary_key=True)
+    date: date_type = Field(primary_key=True)
+    daily_stress_kj: float = Field(default=0.0)
+    low_stress_kj: float = Field(default=0.0)
+    high_stress_kj: float = Field(default=0.0)
+    peak_stress_kj: float = Field(default=0.0)
+    ctl: float = Field(default=0.0)
+    atl: float = Field(default=0.0)
+    tsb: float = Field(default=0.0)

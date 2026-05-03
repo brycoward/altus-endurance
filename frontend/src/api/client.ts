@@ -83,6 +83,11 @@ export const api = {
   getLatestDigest: () => client.get('/api/digest/latest').then(r => r.data),
   getAnalysisDashboard: (days: number = 90) => client.get(`/api/analysis/dashboard`, { params: { days } }).then(r => r.data),
 
+  // Fitness Signature
+  getFitnessSignature: () => client.get('/api/fitness/signature').then(r => r.data),
+  getFitnessChronic: (days: number = 90) => client.get('/api/fitness/chronic', { params: { days } }).then(r => r.data),
+  getFitnessStress: (days: number = 90) => client.get('/api/fitness/stress', { params: { days } }).then(r => r.data),
+
   // Data Portability
   getBaseUrl: () => API_URL,
   exportJson: () => client.get('/api/data/export/json', { responseType: 'blob' }).then(r => r.data),

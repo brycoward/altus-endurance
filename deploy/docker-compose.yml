@@ -1,3 +1,9 @@
+# Production deployment — run this on your staging/live machine.
+# Prerequisites: Docker + Docker Compose.
+# 1. Create a .env file in the project root (see .env.example).
+# 2. From the project root: docker compose -f deploy/docker-compose.yml up -d --build
+# 3. App will be available at http://<machine-ip>
+
 services:
   db:
     image: postgres:16-alpine
@@ -17,15 +23,18 @@ services:
     restart: always
 
   app:
-    image: ghcr.io/brycoward/altus-endurance:latest
+    build:
+      context: ..
+      dockerfile: Dockerfile
     container_name: altus_endurance_app
     env_file: ../.env
     environment:
       - POSTGRES_DSN=postgresql+asyncpg://altus:${POSTGRES_PASSWORD}@db:5432/altus
       - REDIS_URL=redis://redis:6379/0
       - SECRET_KEY=${SECRET_KEY}
-      - LLM_PROVIDER=anthropic
+      - LLM_PROVIDER=${LLM_PROVIDER:-anthropic}
       - LLM_API_KEY=${LLM_API_KEY}
+      - DEBUG_REQUESTS=${DEBUG_REQUESTS:-false}
     depends_on:
       - db
       - redis
@@ -34,7 +43,9 @@ services:
     restart: always
 
   celery_worker:
-    image: ghcr.io/brycoward/altus-endurance:latest
+    build:
+      context: ..
+      dockerfile: Dockerfile
     container_name: altus_endurance_celery
     command: celery -A app.tasks worker --loglevel=info
     env_file: ../.env
@@ -42,13 +53,17 @@ services:
       - POSTGRES_DSN=postgresql+asyncpg://altus:${POSTGRES_PASSWORD}@db:5432/altus
       - REDIS_URL=redis://redis:6379/0
       - SECRET_KEY=${SECRET_KEY}
+    volumes:
+      - digests:/digests
     depends_on:
       - db
       - redis
     restart: always
 
   celery_beat:
-    image: ghcr.io/brycoward/altus-endurance:latest
+    build:
+      context: ..
+      dockerfile: Dockerfile
     container_name: altus_endurance_beat
     command: celery -A app.tasks beat --loglevel=info
     env_file: ../.env
@@ -56,6 +71,8 @@ services:
       - POSTGRES_DSN=postgresql+asyncpg://altus:${POSTGRES_PASSWORD}@db:5432/altus
       - REDIS_URL=redis://redis:6379/0
       - SECRET_KEY=${SECRET_KEY}
+    volumes:
+      - digests:/digests
     depends_on:
       - db
       - redis
@@ -63,3 +80,4 @@ services:
 
 volumes:
   postgres_data:
+  digests:

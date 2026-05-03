@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { UnitProvider } from './context/UnitContext';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { RecoveryPage } from './pages/RecoveryPage';
 import { Sidebar } from './components/Sidebar';
+import { CalendarDashboard } from './components/CalendarDashboard';
 import { Dashboard } from './components/Dashboard';
 import { JournalFeed } from './components/JournalFeed';
 import { HistoryCalendar } from './components/HistoryCalendar';
@@ -14,6 +16,10 @@ import { AppSettings } from './components/AppSettings';
 import { ChatWidget } from './components/ChatWidget';
 import { EnduranceDashboard } from './components/EnduranceDashboard';
 import { DataPortability } from './components/DataPortability';
+import { GoalCoach } from './components/GoalCoach';
+import { GoalProgressDashboard } from './components/GoalProgressDashboard';
+import { WeeklyRecap } from './components/WeeklyRecap';
+import { DataAnalysis } from './components/DataAnalysis';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,7 +32,7 @@ const queryClient = new QueryClient({
 
 function MainApp() {
   const { token, isLoading } = useAuth();
-  const [activeView, setActiveView] = useState<'dashboard' | 'journal' | 'biometrics' | 'history' | 'endurance' | 'user-settings' | 'app-settings' | 'data-portability'>('dashboard');
+  const [activeView, setActiveView] = useState<'calendar' | 'dashboard' | 'journal' | 'biometrics' | 'history' | 'endurance' | 'goals' | 'recap' | 'analysis' | 'user-settings' | 'app-settings' | 'data-portability'>('calendar');
   const [authView, setAuthView] = useState<'login' | 'register' | 'recovery'>('login');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -57,8 +63,19 @@ function MainApp() {
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col relative overflow-hidden">
+        {activeView === 'calendar' && <CalendarDashboard />}
         {activeView === 'dashboard' && <Dashboard />}
         {activeView === 'endurance' && <EnduranceDashboard />}
+        {activeView === 'goals' && (
+          <div className="flex-1 overflow-y-auto bg-[rgb(var(--bg-primary))]">
+            <GoalProgressDashboard />
+            <div className="border-t border-[rgb(var(--border))]">
+              <GoalCoach />
+            </div>
+          </div>
+        )}
+        {activeView === 'recap' && <WeeklyRecap />}
+        {activeView === 'analysis' && <DataAnalysis />}
         {activeView === 'data-portability' && <DataPortability />}
         
         {activeView === 'journal' && (
@@ -95,7 +112,9 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemeProvider>
-          <MainApp />
+          <UnitProvider>
+            <MainApp />
+          </UnitProvider>
         </ThemeProvider>
       </AuthProvider>
     </QueryClientProvider>

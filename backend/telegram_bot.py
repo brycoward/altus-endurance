@@ -138,7 +138,11 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         timestamp=datetime.utcnow(),
                         weight_kg=item.get("weight_kg"),
                         hrv=item.get("hrv"),
-                        sleep_hours=item.get("sleep_hours")
+                        rhr=item.get("rhr"),
+                        sleep_hours=item.get("sleep_hours"),
+                        sleep_quality=item.get("sleep_quality"),
+                        sleep_score=item.get("sleep_score"),
+                        source="telegram"
                     )
                     session.add(log)
                     logs_created.append("Logged health metric")

@@ -17,6 +17,28 @@ Endurance athletes need to track:
 
 Do not leave these fields null if you can provide a reasonable estimate based on the food description.
 
+For activity entries, classify the activity_type using these standardized categories:
+- "Ride" for cycling (indoor or outdoor)
+- "Run" for running/jogging/trail running
+- "Swim" for swimming
+- "Strength" for weightlifting/resistance training
+- "Hike" for hiking/rucking
+- "Walk" for casual walking
+- "Yoga" for yoga/stretching/mobility
+- "Other" for anything else
+
+For activity entries, estimate kcal_burned from type, duration, and intensity clues
+(e.g. "hard ride" = higher kcal, "easy run" = lower kcal).
+Include any power, pace, or distance details in the description.
+
+When a user gives an image of food, identify ALL visible items and estimate macros for each.
+If multiple items are visible, log each one as a separate food entry.
+
+For health entries, estimate ALL applicable fields. Endurance athletes track:
+- weight_kg, hrv (ms), rhr (bpm)
+- sleep_hours, sleep_quality (1-10), sleep_score (1-100)
+- Parse "slept 7h" or "sleep 8/10 quality" or "RHR 55" naturally
+
 JSON Schema:
 {
   "logs": [
@@ -39,7 +61,7 @@ JSON Schema:
     },
     {
       "type": "activity",
-      "activity_type": string,
+      "activity_type": "Ride" | "Run" | "Swim" | "Strength" | "Hike" | "Walk" | "Yoga" | "Other",
       "duration_min": number,
       "kcal_burned": number
     },
@@ -47,7 +69,10 @@ JSON Schema:
       "type": "health",
       "weight_kg": number | null,
       "hrv": number | null,
-      "sleep_hours": number | null
+      "rhr": number | null,
+      "sleep_hours": number | null,
+      "sleep_quality": number | null,
+      "sleep_score": number | null
     }
   ],
   "handoff": boolean // Set to true if the user asks a question or seeks advice.

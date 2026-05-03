@@ -1,4 +1,5 @@
 import os
+import base64
 import httpx
 from typing import Optional
 
@@ -12,9 +13,11 @@ class LLMClient:
             return "AI placeholder: No API key configured."
 
         if self.provider == "anthropic":
-            return await self._anthropic_complete(prompt, system_prompt)
+            return await self._anthropic_complete(prompt, system_prompt, image_b64)
         elif self.provider == "openai":
-            return await self._openai_complete(prompt, system_prompt)
+            return await self._openai_complete(prompt, system_prompt, image_b64)
+        elif self.provider == "deepseek":
+            return await self._deepseek_complete(prompt, system_prompt, image_b64)
         elif self.provider == "google":
             return await self._gemini_complete(prompt, system_prompt, image_b64)
         return f"Unsupported LLM provider: {self.provider}"
@@ -45,7 +48,13 @@ class LLMClient:
             data = resp.json()
             return data["candidates"][0]["content"]["parts"][0]["text"]
 
-    async def _anthropic_complete(self, prompt: str, system_prompt: str) -> str:
+    async def _anthropic_complete(self, prompt: str, system_prompt: str, image_b64: Optional[str] = None) -> str:
+        content = prompt
+        if image_b64:
+            content = [
+                {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": image_b64}},
+                {"type": "text", "text": prompt}
+            ]
         async with httpx.AsyncClient() as client:
             resp = await client.post(
                 "https://api.anthropic.com/v1/messages",
@@ -56,16 +65,22 @@ class LLMClient:
                 },
                 json={
                     "model": "claude-3-haiku-20240307",
-                    "max_tokens": 512,
+                    "max_tokens": 1024,
                     "system": system_prompt,
-                    "messages": [{"role": "user", "content": prompt}]
+                    "messages": [{"role": "user", "content": content}]
                 },
                 timeout=30.0
             )
             resp.raise_for_status()
             return resp.json()["content"][0]["text"]
 
-    async def _openai_complete(self, prompt: str, system_prompt: str) -> str:
+    async def _openai_complete(self, prompt: str, system_prompt: str, image_b64: Optional[str] = None) -> str:
+        content = prompt
+        if image_b64:
+            content = [
+                {"type": "text", "text": prompt},
+                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{image_b64}", "detail": "low"}}
+            ]
         async with httpx.AsyncClient() as client:
             resp = await client.post(
                 "https://api.openai.com/v1/chat/completions",
@@ -74,13 +89,36 @@ class LLMClient:
                     "Content-Type": "application/json"
                 },
                 json={
-                    "model": "gpt-3.5-turbo",
+                    "model": "gpt-4o",
                     "messages": [
                         {"role": "system", "content": system_prompt},
-                        {"role": "user", "content": prompt}
+                        {"role": "user", "content": content}
                     ]
                 },
                 timeout=30.0
+            )
+            resp.raise_for_status()
+            return resp.json()["choices"][0]["message"]["content"]
+
+    async def _deepseek_complete(self, prompt: str, system_prompt: str, image_b64: Optional[str] = None) -> str:
+        content = prompt
+        if image_b64:
+            content = prompt + "\n\n[Note: A food photo was attached but DeepSeek processes text only. Please parse any text description provided.]"
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                "https://api.deepseek.com/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "deepseek-chat",
+                    "messages": [
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": content}
+                    ]
+                },
+                timeout=60.0
             )
             resp.raise_for_status()
             return resp.json()["choices"][0]["message"]["content"]

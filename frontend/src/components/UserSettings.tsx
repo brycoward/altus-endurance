@@ -19,7 +19,8 @@ export function UserSettings() {
     llm_provider: 'anthropic',
     telegram_username: '',
     bmr_override: 0,
-    activity_multiplier: 1.2
+    activity_multiplier: 1.2,
+    unit_system: 'metric'
   });
 
   const { data: goalData } = useGoal();
@@ -49,7 +50,8 @@ export function UserSettings() {
         llm_provider: user.llm_provider || 'anthropic',
         telegram_username: user.telegram_username || '',
         bmr_override: user.bmr_override || 0,
-        activity_multiplier: user.activity_multiplier || 1.2
+        activity_multiplier: user.activity_multiplier || 1.2,
+        unit_system: user.unit_system || 'metric',
       });
     }
   }, [user]);
@@ -204,6 +206,36 @@ export function UserSettings() {
                 </select>
               </div>
 
+              <div className="space-y-1 col-span-1">
+                <label className="text-xs font-bold text-slate-500 uppercase">Units</label>
+                <div className="flex bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, unit_system: 'metric' })}
+                    className={clsx(
+                      "flex-1 py-3 text-xs font-black uppercase tracking-widest transition-all",
+                      formData.unit_system === 'metric'
+                        ? "bg-emerald-500 text-slate-950"
+                        : "text-slate-400 hover:text-slate-200"
+                    )}
+                  >
+                    Metric
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, unit_system: 'imperial' })}
+                    className={clsx(
+                      "flex-1 py-3 text-xs font-black uppercase tracking-widest transition-all",
+                      formData.unit_system === 'imperial'
+                        ? "bg-emerald-500 text-slate-950"
+                        : "text-slate-400 hover:text-slate-200"
+                    )}
+                  >
+                    Imperial
+                  </button>
+                </div>
+              </div>
+
               <div className="space-y-1 col-span-2">
                 <label className="text-xs font-bold text-slate-500 uppercase">Telegram Username</label>
                 <input
@@ -226,9 +258,10 @@ export function UserSettings() {
                   onChange={(e) => setFormData({ ...formData, llm_provider: e.target.value })}
                   className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-slate-100"
                 >
-                  <option value="anthropic">Anthropic (Claude)</option>
-                  <option value="openai">OpenAI (GPT)</option>
-                  <option value="google">Google (Gemini)</option>
+                   <option value="anthropic">Anthropic (Claude)</option>
+                   <option value="openai">OpenAI (GPT)</option>
+                   <option value="deepseek">DeepSeek</option>
+                   <option value="google">Google (Gemini)</option>
                 </select>
               </div>
 

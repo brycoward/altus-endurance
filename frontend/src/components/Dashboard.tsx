@@ -1,5 +1,6 @@
 import React from 'react';
 import { useSnapshot, useHistory, useUser, useLatestHealth } from '../hooks/useAltus';
+import { useUnits } from '../hooks/useUnits';
 import { 
   LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar
 } from 'recharts';
@@ -11,6 +12,7 @@ export function Dashboard() {
   const { data: history } = useHistory();
   const { data: user } = useUser();
   const { data: latestHealth } = useLatestHealth();
+  const u = useUnits();
 
   const chartData = React.useMemo(() => {
     if (!history) return [];
@@ -82,8 +84,8 @@ export function Dashboard() {
         />
         <StatCard 
             label="Weight" 
-            value={latestHealth?.weight_kg || 0} 
-            unit="kg" 
+            value={u.formatWeight(latestHealth?.weight_kg || 0)} 
+            unit="" 
             icon={Scale} 
             color="text-amber-400" 
             bg="bg-amber-500/10"

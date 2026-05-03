@@ -49,6 +49,7 @@ class User(SQLModel, table=True):
     telegram_chat_id: Optional[str] = None
     bmr_override: Optional[float] = None
     activity_multiplier: float = Field(default=1.2)
+    unit_system: str = Field(default="metric")
 
     goals: list["UserGoal"] = Relationship(back_populates="user")
     food_logs: list["FoodLog"] = Relationship(back_populates="user")
@@ -58,6 +59,7 @@ class User(SQLModel, table=True):
     # Endurance Module
     endurance_goal: Optional["EnduranceGoal"] = Relationship(back_populates="user")
     weekly_planners: list["WeeklyPlanner"] = Relationship(back_populates="user")
+    planned_workouts: list["PlannedWorkout"] = Relationship(back_populates="user")
     physiology: Optional["UserPhysiology"] = Relationship(back_populates="user")
 
 class UserGoal(SQLModel, table=True):
@@ -67,6 +69,10 @@ class UserGoal(SQLModel, table=True):
     weekly_rate_kg: float = Field(default=0.0)
     tdee_estimate: float = Field(default=2000.0)
     target_kcal: float = Field(default=2000.0)
+    target_weight_kg: Optional[float] = None
+    target_date: Optional[date_type] = None
+    body_fat_pct_target: Optional[float] = None
+    notes: Optional[str] = None
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     user: User = Relationship(back_populates="goals")
@@ -146,6 +152,18 @@ class WeeklyPlanner(SQLModel, table=True):
     z4_ceiling_kj: float = Field(default=0.0)
 
     user: User = Relationship(back_populates="weekly_planners")
+
+class PlannedWorkout(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: uuid.UUID = Field(foreign_key="user.id")
+    date: date_type
+    planned_type: str
+    planned_duration_min: int = Field(default=0)
+    planned_kj: float = Field(default=0.0)
+    notes: Optional[str] = None
+    completed: bool = Field(default=False)
+
+    user: User = Relationship(back_populates="planned_workouts")
 
 class ZoneMetrics(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)

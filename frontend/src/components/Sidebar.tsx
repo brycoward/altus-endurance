@@ -1,5 +1,5 @@
 import React from 'react';
-import { 
+import {
   LayoutDashboard, 
   BookOpen, 
   Scale, 
@@ -9,7 +9,11 @@ import {
   LogOut,
   Target,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  CalendarDays,
+  Crosshair,
+  ScrollText,
+  BarChart3
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuth } from '../context/AuthContext';
@@ -25,8 +29,12 @@ export function Sidebar({ activeView, onViewChange, isCollapsed, setIsCollapsed 
   const { logout } = useAuth();
 
   const menuItems = [
+    { id: 'calendar', label: 'Calendar', icon: CalendarDays },
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'endurance', label: 'Endurance', icon: Target },
+    { id: 'recap', label: 'Weekly Recap', icon: ScrollText },
+    { id: 'analysis', label: 'Data Analysis', icon: BarChart3 },
+    { id: 'goals', label: 'Goals', icon: Crosshair },
+    { id: 'endurance', label: 'Performance', icon: Target },
     { id: 'journal', label: 'Nutrition Journal', icon: BookOpen },
     { id: 'biometrics', label: 'Biometrics', icon: Scale },
     { id: 'history', label: 'Historic Data', icon: Calendar },

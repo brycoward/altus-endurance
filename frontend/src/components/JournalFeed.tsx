@@ -1,6 +1,7 @@
 import React from 'react';
 import { Utensils, Zap, Activity, Edit2, Trash2, Check, X, Minus, Flame, ChevronDown, ChevronRight, Plus, Sparkles, Loader2, Scale, Heart, Moon, Clock } from 'lucide-react';
 import { useJournal, useJournalForDate, useUpdateFood, useDeleteFood, useUpdateActivity, useDeleteActivity, useLogFood, useLogActivity, useEstimate, useLogHealth, useUpdateHealth, useDeleteHealth } from '../hooks/useAltus';
+import { useUnits } from '../hooks/useUnits';
 import { clsx } from 'clsx';
 
 const SLOTS = ["Breakfast", "Lunch", "Dinner", "Snack", "WorkoutFuel"];
@@ -278,6 +279,7 @@ function FoodEntry({ food }: { food: any }) {
   const [editData, setEditData] = React.useState(food);
   const updateFood = useUpdateFood();
   const deleteFood = useDeleteFood();
+  const u = useUnits();
 
   const handleSave = () => {
     updateFood.mutate({ foodId: food.id, data: editData }, {
@@ -425,7 +427,7 @@ function FoodEntry({ food }: { food: any }) {
               <MacroBadge label="Alc" value={food.alcohol_g} color="bg-purple-500/10 text-purple-400" />
               <MacroBadge label="Na" value={food.sodium_mg} color="bg-slate-500/10 text-[rgb(var(--text-muted))]" />
               <MacroBadge label="Caf" value={food.caffeine_mg} color="bg-orange-500/10 text-orange-400" />
-              <MacroBadge label="H2O" value={food.hydration_ml} color="bg-cyan-500/10 text-cyan-400" />
+              <MacroBadge label={u.unit === 'imperial' ? 'H₂O (oz)' : 'H₂O (ml)'} value={u.toUnit.volume(food.hydration_ml || 0)} color="bg-cyan-500/10 text-cyan-400" />
               <MacroBadge label="Fe" value={food.iron_mg} color="bg-red-500/10 text-red-400" />
               <MacroBadge label="Ca" value={food.calcium_mg} color="bg-zinc-500/10 text-[rgb(var(--text-muted))]" />
               <MacroBadge label="K" value={food.potassium_mg} color="bg-yellow-500/10 text-yellow-400" />
@@ -510,6 +512,7 @@ export function JournalFeed({
   const journal = dateStr ? historicJournal : todayJournal;
   const isLoading = dateStr ? isLoadingHistoric : isLoadingToday;
   const isError = dateStr ? isErrorHistoric : isErrorToday;
+  const u = useUnits();
 
   // Yesterday's data for Quick Log
   const viewDate = new Date(dateStr || new Date().toISOString().split('T')[0]);
@@ -643,7 +646,7 @@ export function JournalFeed({
             </div>
             <div className="p-3 bg-[rgb(var(--bg-primary))] rounded-2xl border border-[rgb(var(--border))]">
               <div className="text-[8px] font-black text-[rgb(var(--text-muted))] uppercase tracking-widest mb-1">Hydration</div>
-              <div className="text-sm font-black text-cyan-400">{Math.round(totals.hydration)}<span className="text-[8px] opacity-50 ml-0.5">ml</span></div>
+              <div className="text-sm font-black text-cyan-400">{Math.round(u.toUnit.volume(totals.hydration))}<span className="text-[8px] opacity-50 ml-0.5">{u.unit === 'imperial' ? 'fl oz' : 'ml'}</span></div>
             </div>
             <div className="p-3 bg-[rgb(var(--bg-primary))] rounded-2xl border border-[rgb(var(--border))]">
               <div className="text-[8px] font-black text-[rgb(var(--text-muted))] uppercase tracking-widest mb-1">Iron</div>
@@ -1053,6 +1056,7 @@ function AddBiometricsEntry({ dateStr, onCancel }: { dateStr?: string, onCancel:
     time: initialTime
   });
   const logHealth = useLogHealth();
+  const u = useUnits();
 
   const handleSave = () => {
     const [hours, minutes] = data.time.split(':');
@@ -1093,7 +1097,7 @@ function AddBiometricsEntry({ dateStr, onCancel }: { dateStr?: string, onCancel:
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
         <BiometricInput 
           label="Weight" 
-          unit="kg"
+          unit={u.label.weight}
           value={data.weight_kg} 
           onChange={val => setData({...data, weight_kg: val})}
           icon={Scale}
@@ -1153,6 +1157,7 @@ function BiometricsEntry({ health }: { health: any }) {
   const [editData, setEditData] = React.useState(health);
   const updateHealth = useUpdateHealth();
   const deleteHealth = useDeleteHealth();
+  const u = useUnits();
 
   const handleSave = () => {
     const finalData = {
@@ -1254,7 +1259,7 @@ function BiometricsEntry({ health }: { health: any }) {
         </div>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        {health.weight_kg !== null && health.weight_kg > 0 && <MetricItem icon={Scale} label="Weight" value={`${health.weight_kg}kg`} color="text-blue-400" />}
+        {health.weight_kg !== null && health.weight_kg > 0 && <MetricItem icon={Scale} label="Weight" value={u.formatWeight(health.weight_kg)} color="text-blue-400" />}
         {health.rhr !== null && health.rhr > 0 && <MetricItem icon={Heart} label="RHR" value={`${health.rhr} bpm`} color="text-rose-400" />}
         {health.hrv !== null && health.hrv > 0 && <MetricItem icon={Zap} label="HRV" value={`${health.hrv} ms`} color="text-amber-400" />}
         {health.sleep_score !== null && health.sleep_score > 0 && <MetricItem icon={Sparkles} label="Sleep Score" value={health.sleep_score} color="text-indigo-400" />}

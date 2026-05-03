@@ -1,75 +1,57 @@
 {
-  "generated_at": "2026-04-25T21:30:59.740267",
+  "generated_at": "2026-05-03T18:51:12.650555",
   "user_profile": {
-    "age": 35,
+    "age": 36,
     "sex": "M",
-    "height_cm": 198.0,
+    "height_cm": 180.0,
     "goal": {
-      "direction": "lose",
-      "weekly_rate_kg": -0.5,
-      "target_kcal": 1949.0625
+      "direction": "maintain",
+      "weekly_rate_kg": 0.0,
+      "target_kcal": 2000.0
     }
   },
   "last_7_days": {
-    "avg_kcal_consumed": 2584.0,
-    "avg_kcal_burned": 2500.0,
-    "avg_balance": 1865.0625,
-    "adherence_pct": 0.0,
-    "best_day": "2026-04-25",
-    "worst_day": "2026-04-25",
+    "avg_kcal_consumed": 0,
+    "avg_kcal_burned": 0,
+    "avg_balance": 0,
+    "adherence_pct": 0,
+    "best_day": null,
+    "worst_day": null,
     "macro_averages": {
-      "protein_g": 119.9,
-      "carbs_g": 321.0,
-      "fat_g": 91.4
+      "protein_g": 0,
+      "carbs_g": 0,
+      "fat_g": 0
     }
   },
   "today": {
-    "date": "2026-04-25",
-    "consumed_kcal": 2584.0,
-    "burned_kcal": 2500.0,
-    "balance_kcal": 1865.0625,
+    "date": "2026-05-03",
+    "consumed_kcal": 0,
+    "burned_kcal": 0,
+    "balance_kcal": 0,
     "entries": [
       {
         "slot": "Breakfast",
-        "description": "2 homemade waffles, 1 tbsp butter, 2 scrambled eggs",
-        "kcal": 680.0,
-        "protein_g": 22.0
-      },
-      {
-        "slot": "WorkoutFuel",
-        "description": "125g gatorade",
-        "kcal": 500.0,
-        "protein_g": 0.0
-      },
-      {
-        "slot": "WorkoutFuel",
-        "description": "2 scoops protein powder in 8 oz whole milk",
-        "kcal": 390.0,
-        "protein_g": 58.0
+        "description": "Scrambled eggs with toast",
+        "kcal": 420.0,
+        "protein_g": 28.0
       },
       {
         "slot": "Lunch",
-        "description": "pulled pork sandwich with vinegar cole slaw",
-        "kcal": 550.0,
-        "protein_g": 30.0
+        "description": "Grilled chicken salad",
+        "kcal": 580.0,
+        "protein_g": 45.0
+      },
+      {
+        "slot": "Dinner",
+        "description": "Salmon with rice and broccoli",
+        "kcal": 720.0,
+        "protein_g": 52.0
       },
       {
         "slot": "Snack",
-        "description": "8 Girl Scout Trefoils cookies",
-        "kcal": 256.0,
-        "protein_g": 3.2
-      },
-      {
-        "slot": "Snack",
-        "description": "3 pieces of sushi roll",
-        "kcal": 150.0,
-        "protein_g": 6.0
-      },
-      {
-        "slot": "Snack",
-        "description": "65g banana",
-        "kcal": 58.0,
-        "protein_g": 0.7
+        "description": "Greek yogurt with berries",
+        "kcal": 180.0,
+        "protein_g": 15.0
       }
     ]
   },

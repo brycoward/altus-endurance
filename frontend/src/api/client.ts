@@ -47,6 +47,14 @@ export const api = {
   deleteHealth: (healthId: number) => client.delete(`/api/health/${healthId}`).then(r => r.data),
   getLatestHealth: () => client.get('/api/health/latest').then(r => r.data),
   chatLog: (data: any) => client.post('/api/log', data).then(r => r.data),
+  chatLogWithImage: (message: string, file?: File) => {
+    const formData = new FormData();
+    formData.append('message', message);
+    if (file) formData.append('file', file);
+    return client.post('/api/log/image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }).then(r => r.data);
+  },
   estimate: (text: string) => client.post('/api/estimate', { text }).then(r => r.data),
   
   // Endurance
@@ -60,6 +68,20 @@ export const api = {
     }).then(r => r.data);
   },
   getEnduranceDashboard: () => client.get('/api/endurance/dashboard').then(r => r.data),
+
+  // Calendar & Planning
+  getCalendarWeek: (date?: string) => client.get('/api/calendar/week', { params: date ? { date } : {} }).then(r => r.data),
+  getWeekPlan: (date?: string) => client.get('/api/planner/week', { params: date ? { date } : {} }).then(r => r.data),
+  saveWeekPlan: (data: { week_start_date: string; workouts: any[] }) => client.post('/api/planner/week', data).then(r => r.data),
+  generateWeekPlan: (date?: string) => client.post('/api/planner/generate', null, { params: date ? { date } : {} }).then(r => r.data),
+
+  // Goal Coach
+  goalsCoach: (data: any) => client.post('/api/goals/coach', data).then(r => r.data),
+  getEnduranceGoal: () => client.get('/api/endurance/goal').then(r => r.data),
+  updateEnduranceGoal: (data: any) => client.put('/api/endurance/goal', data).then(r => r.data),
+  getGoalProgress: () => client.get('/api/goals/progress').then(r => r.data),
+  getLatestDigest: () => client.get('/api/digest/latest').then(r => r.data),
+  getAnalysisDashboard: (days: number = 90) => client.get(`/api/analysis/dashboard`, { params: { days } }).then(r => r.data),
 
   // Data Portability
   getBaseUrl: () => API_URL,

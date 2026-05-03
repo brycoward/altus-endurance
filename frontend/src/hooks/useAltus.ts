@@ -45,7 +45,7 @@ export function useUpdateUser() {
 export function useUpdateGoal() {
   const queryClient = useQueryClient();
   return useMutation(
-    (data: { direction: string; weekly_rate_kg: number }) => api.updateGoal(data),
+    (data: { direction: string; weekly_rate_kg: number; target_weight_kg?: number | null; target_date?: string | null; body_fat_pct_target?: number | null; notes?: string | null }) => api.updateGoal(data),
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['goal']);
@@ -202,4 +202,82 @@ export function useChatLog() {
         },
       }
     );
+  }
+
+export function useCalendarWeek(date?: string) {
+  return useQuery(['calendar', date], () => api.getCalendarWeek(date), {
+    refetchInterval: 30000,
+  });
+}
+
+export function useWeekPlan(date?: string) {
+  return useQuery(['weekPlan', date], () => api.getWeekPlan(date), {
+    enabled: true,
+  });
+}
+
+export function useSaveWeekPlan() {
+  const queryClient = useQueryClient();
+  return useMutation(
+    (data: { week_start_date: string; workouts: any[] }) => api.saveWeekPlan(data),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['weekPlan']);
+        queryClient.invalidateQueries(['calendar']);
+      },
+    }
+  );
+}
+
+export function useGenerateWeekPlan() {
+  const queryClient = useQueryClient();
+  return useMutation(
+    (date?: string) => api.generateWeekPlan(date),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['weekPlan']);
+        queryClient.invalidateQueries(['calendar']);
+      },
+    }
+  );
+}
+
+export function useGoalsCoach() {
+  return useMutation((data: { message: string }) => api.goalsCoach(data));
+}
+
+export function useEnduranceGoal() {
+  return useQuery(['enduranceGoal'], () => api.getEnduranceGoal(), {
+    retry: false,
+  });
+}
+
+export function useUpdateEnduranceGoal() {
+  const queryClient = useQueryClient();
+  return useMutation(
+    (data: any) => api.updateEnduranceGoal(data),
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries(['enduranceGoal']);
+      },
+    }
+  );
+}
+
+export function useGoalProgress() {
+  return useQuery(['goalProgress'], () => api.getGoalProgress(), {
+    refetchInterval: 30000,
+  });
+}
+
+export function useLatestDigest() {
+  return useQuery(['latestDigest'], () => api.getLatestDigest(), {
+    refetchInterval: 60000,
+  });
+}
+
+export function useAnalysisDashboard(days: number = 90) {
+  return useQuery(['analysis', days], () => api.getAnalysisDashboard(days), {
+    refetchInterval: 60000,
+  });
 }

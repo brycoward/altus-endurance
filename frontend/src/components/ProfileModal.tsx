@@ -20,7 +20,8 @@ export function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
     llm_api_key: '',
     llm_provider: 'anthropic',
     telegram_username: '',
-    bmr_override: 0
+    bmr_override: 0,
+    unit_system: 'metric'
   });
 
   const [tfaData, setTfaData] = useState<{ secret: string, qr_code: string } | null>(null);
@@ -39,7 +40,8 @@ export function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
         llm_api_key: user.llm_api_key || '',
         llm_provider: user.llm_provider || 'anthropic',
         telegram_username: user.telegram_username || '',
-        bmr_override: user.bmr_override || 0
+        bmr_override: user.bmr_override || 0,
+        unit_system: user.unit_system || 'metric',
       });
     }
   }, [user]);
@@ -223,6 +225,36 @@ export function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                     />
                 </div>
 
+                <div className="space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase">Units</label>
+                    <div className="flex bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
+                        <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, unit_system: 'metric' })}
+                            className={clsx(
+                                "flex-1 py-2 text-xs font-black uppercase tracking-widest transition-all",
+                                formData.unit_system === 'metric'
+                                    ? "bg-emerald-500 text-slate-950"
+                                    : "text-slate-400 hover:text-slate-200"
+                            )}
+                        >
+                            Metric
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setFormData({ ...formData, unit_system: 'imperial' })}
+                            className={clsx(
+                                "flex-1 py-2 text-xs font-black uppercase tracking-widest transition-all",
+                                formData.unit_system === 'imperial'
+                                    ? "bg-emerald-500 text-slate-950"
+                                    : "text-slate-400 hover:text-slate-200"
+                            )}
+                        >
+                            Imperial
+                        </button>
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                         <label className="text-xs font-bold text-slate-500 uppercase">LLM Provider</label>
@@ -233,6 +265,7 @@ export function ProfileModal({ isOpen, onClose }: { isOpen: boolean; onClose: ()
                         >
                             <option value="anthropic">Anthropic (Claude)</option>
                             <option value="openai">OpenAI (GPT)</option>
+                            <option value="deepseek">DeepSeek</option>
                             <option value="google">Google (Gemini)</option>
                         </select>
                     </div>

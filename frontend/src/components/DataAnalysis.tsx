@@ -206,7 +206,7 @@ export function DataAnalysis() {
               <ComposedChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(var(--border), 0.5)" vertical={false} />
                 <XAxis dataKey="date" stroke="rgb(var(--text-muted))" fontSize={10} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-                <YAxis stroke="rgb(var(--text-muted))" fontSize={10} tickLine={false} axisLine={false} domain={['dataMin - 2', 'dataMax + 2']} label={{ value: u.label.weight, angle: -90, position: 'insideLeft', style: { fill: 'rgb(var(--text-muted))', fontSize: 10 } }} />
+                <YAxis stroke="rgb(var(--text-muted))" fontSize={10} tickLine={false} axisLine={false} domain={['auto', 'auto']} label={{ value: u.label.weight, angle: -90, position: 'insideLeft', style: { fill: 'rgb(var(--text-muted))', fontSize: 10 } }} />
                 <Tooltip
                   contentStyle={{ backgroundColor: 'rgb(var(--bg-secondary))', border: '1px solid rgb(var(--border))', borderRadius: '12px' }}
                   labelStyle={{ color: 'rgb(var(--text-primary))', fontSize: 12, fontWeight: 'bold' }}

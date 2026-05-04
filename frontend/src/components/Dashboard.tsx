@@ -132,7 +132,7 @@ export function Dashboard() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(var(--border), 0.5)" vertical={false} />
                 <XAxis dataKey="date" stroke="rgb(var(--text-muted))" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis stroke="rgb(var(--text-muted))" fontSize={10} tickLine={false} axisLine={false} domain={['dataMin - 2', 'dataMax + 2']} />
+                <YAxis stroke="rgb(var(--text-muted))" fontSize={10} tickLine={false} axisLine={false} domain={['dataMin - 2', 'dataMax + 2']} tickFormatter={(v: number) => v.toFixed(0)} />
                 <Tooltip 
                   contentStyle={{ backgroundColor: 'rgb(var(--bg-secondary))', border: '1px solid rgb(var(--border))', borderRadius: '12px' }}
                   itemStyle={{ fontSize: '12px', fontWeight: 'bold', color: 'rgb(var(--text-primary))' }}

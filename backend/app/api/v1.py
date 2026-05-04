@@ -1778,7 +1778,7 @@ async def get_analysis_dashboard(
                 "count": date_acts["count"],
                 "activities": date_acts["activities"],
             },
-            "health": date_health if date_health else None,
+            "health": date_health if any(date_health.values()) else None,
         })
 
     return {

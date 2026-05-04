@@ -1047,12 +1047,14 @@ function SleepInput({
 
 function AddBiometricsEntry({ dateStr, onCancel }: { dateStr?: string, onCancel: () => void }) {
   const initialTime = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const initialDate = dateStr || new Date().toISOString().split('T')[0];
   const [data, setData] = React.useState({
     weight_kg: null as number | null,
     rhr: null as number | null,
     hrv: null as number | null,
     sleep_score: null as number | null,
     sleep_hours: null as number | null,
+    date: initialDate,
     time: initialTime
   });
   const logHealth = useLogHealth();
@@ -1060,9 +1062,7 @@ function AddBiometricsEntry({ dateStr, onCancel }: { dateStr?: string, onCancel:
 
   const handleSave = () => {
     const [hours, minutes] = data.time.split(':');
-    const timestamp = dateStr 
-      ? new Date(`${dateStr}T${hours}:${minutes}:00`).toISOString()
-      : new Date().toISOString(); 
+    const timestamp = new Date(`${data.date}T${hours}:${minutes}:00`).toISOString(); 
 
     const finalData: any = { timestamp };
     if (data.weight_kg !== null) finalData.weight_kg = u.unit === 'imperial' ? u.toMetric.weight(data.weight_kg) : data.weight_kg;
@@ -1083,13 +1083,20 @@ function AddBiometricsEntry({ dateStr, onCancel }: { dateStr?: string, onCancel:
           <h4 className="text-sm font-black uppercase tracking-widest text-[rgb(var(--text-primary))]">Log Biometrics</h4>
           <p className="text-[10px] text-[rgb(var(--text-muted))] font-bold mt-1">Track your vital signs and recovery metrics.</p>
         </div>
-        <div className="flex items-center gap-3 bg-[rgb(var(--bg-primary))] border border-[rgb(var(--border))] rounded-2xl px-4 py-2">
-          <Clock size={14} className="text-indigo-400" />
+        <div className="flex items-center gap-2 bg-[rgb(var(--bg-primary))] border border-[rgb(var(--border))] rounded-2xl px-4 py-2">
+          <Clock size={14} className="text-indigo-400 shrink-0" />
+          <input 
+            type="date" 
+            value={data.date} 
+            onChange={e => setData({...data, date: e.target.value})} 
+            className="bg-transparent text-sm font-black text-[rgb(var(--text-primary))] outline-none w-[130px] [color-scheme:dark]" 
+          />
+          <span className="text-[rgb(var(--text-muted))] opacity-30">|</span>
           <input 
             type="time" 
             value={data.time} 
             onChange={e => setData({...data, time: e.target.value})} 
-            className="bg-transparent text-sm font-black text-[rgb(var(--text-primary))] outline-none" 
+            className="bg-transparent text-sm font-black text-[rgb(var(--text-primary))] outline-none w-[100px]" 
           />
         </div>
       </div>

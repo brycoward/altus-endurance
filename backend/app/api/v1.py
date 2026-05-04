@@ -422,6 +422,21 @@ async def _get_journal_for_date(user: User, target_date: date_type, db: AsyncSes
 
 from app.parser import parse_log_message
 
+async def _get_fitness_signature_context(user_id: uuid.UUID, db: AsyncSession) -> Optional[dict]:
+    sig_stmt = select(FitnessSignature).where(FitnessSignature.user_id == user_id)
+    signature = (await db.execute(sig_stmt)).scalars().first()
+    if not signature:
+        return None
+    now = datetime.utcnow()
+    return {
+        "peak_mpa": round(signature.mpa_watts, 1),
+        "peak_ftp": round(signature.ftp_watts, 1),
+        "peak_hie": round(signature.hie_kj, 1),
+        "decayed_mpa": round(apply_decay(signature.mpa_watts, signature.last_mpa_date, signature.decay_half_life_mpa, now), 1),
+        "decayed_ftp": round(apply_decay(signature.ftp_watts, signature.last_ftp_date, signature.decay_half_life_ftp, now), 1),
+        "decayed_hie": round(apply_decay(signature.hie_kj, signature.last_hie_date, signature.decay_half_life_hie, now), 1),
+    }
+
 # --- Chat Placeholders ---
 
 @router.post("/log")
@@ -665,18 +680,99 @@ async def chat_coach(request: ChatRequest, db: AsyncSession = Depends(get_db), c
         act_dicts.append({"date": a.timestamp.date(), "total_kj": kj})
     ltw, stw = EnduranceEngine.calculate_rolling_averages(act_dicts)
 
+    sig_stmt = select(FitnessSignature).where(FitnessSignature.user_id == user_id)
+    signature = (await db.execute(sig_stmt)).scalars().first()
+    fitness_info = None
+    if signature:
+        now = datetime.utcnow()
+        fitness_info = {
+            "peak": {"mpa": round(signature.mpa_watts, 1), "ftp": round(signature.ftp_watts, 1), "hie": round(signature.hie_kj, 1)},
+            "decayed": {
+                "mpa": round(apply_decay(signature.mpa_watts, signature.last_mpa_date, signature.decay_half_life_mpa, now), 1),
+                "ftp": round(apply_decay(signature.ftp_watts, signature.last_ftp_date, signature.decay_half_life_ftp, now), 1),
+                "hie": round(apply_decay(signature.hie_kj, signature.last_hie_date, signature.decay_half_life_hie, now), 1),
+            },
+            "last_breakthrough_at": signature.last_breakthrough_at.isoformat() if signature.last_breakthrough_at else None,
+        }
+
+    fitness_goal_stmt = select(FitnessGoal).where(
+        FitnessGoal.user_id == user_id, FitnessGoal.status == "active"
+    )
+    active_fitness_goals = (await db.execute(fitness_goal_stmt)).scalars().all()
+
+    fitness_goal_gaps = []
+    for fg in active_fitness_goals:
+        gap = {
+            "type": fg.fitness_type, "overload": fg.overload_method,
+            "validation_metric": fg.validation_metric, "target_description": fg.target_description,
+            "metric_value": fg.metric_value, "target_value": fg.target_value,
+            "metric_unit": fg.metric_unit, "metric_type": fg.metric_type,
+            "ramp_rate": fg.ramp_rate, "target_date": fg.target_date.isoformat() if fg.target_date else None,
+        }
+        if fg.metric_value is not None and fg.target_value is not None:
+            gap["current_to_target"] = f"{fg.metric_value} -> {fg.target_value} {fg.metric_unit or ''}"
+            if fg.metric_type == "relative" and latest_weight:
+                cur_abs = fg.metric_value
+                tgt_abs = fg.target_value
+                gap["current_wkg"] = round(cur_abs / latest_weight, 2) if cur_abs and latest_weight else None
+                gap["target_wkg"] = round(tgt_abs / latest_weight, 2) if tgt_abs and latest_weight else None
+                if goal and goal.target_weight_kg:
+                    gap["projected_wkg_at_target_weight"] = round(tgt_abs / goal.target_weight_kg, 2)
+                    gap["power_needed_at_current_weight"] = round(fg.target_value * latest_weight) if latest_weight else None
+        fitness_goal_gaps.append(gap)
+
+    stress_recs = []
+    for fg in active_fitness_goals:
+        t = fg.fitness_type
+        if t == "endurance":
+            stress_recs.append({"type": t, "primary": "Low Stress (Z2 - long steady)", "secondary": "High Stress (tempo/SS)", "avoid": "Peak Stress generally not needed"})
+        elif t in ("power", "explosiveness"):
+            stress_recs.append({"type": t, "primary": "Peak Stress (>2xFTP bursts)", "secondary": "High Stress (VO2max)", "note": "Quality over volume. Fewer sessions, higher intensity."})
+        elif t == "strength":
+            stress_recs.append({"type": t, "primary": "Peak Stress (maximal effort)", "secondary": "High Stress (threshold)", "note": "Neuromuscular adaptation. Watch TSB."})
+        elif t == "speed_skills":
+            stress_recs.append({"type": t, "primary": "High cadence Low Stress", "secondary": "High Stress at race cadence", "note": "Technique-focused, not metabolic-load focused."})
+        elif t == "flexibility":
+            stress_recs.append({"type": t, "primary": "Recovery / mobility work", "secondary": "None", "note": "Independent of training stress. Self-reported metric only."})
+        elif t == "breadth":
+            stress_recs.append({"type": t, "primary": "Mixed modality Low Stress", "secondary": "Any", "note": "Add other sport types to weekly schedule."})
+
+    load_stmt = select(DailyLoad).where(
+        DailyLoad.user_id == user_id
+    ).order_by(DailyLoad.date.desc()).limit(14)
+    recent_loads = (await db.execute(load_stmt)).scalars().all()
+    latest_load = recent_loads[0] if recent_loads else None
+    load_info = None
+    if latest_load:
+        avg_high = sum(l.high_stress_kj for l in recent_loads) / max(len(recent_loads), 1)
+        avg_peak = sum(l.peak_stress_kj for l in recent_loads) / max(len(recent_loads), 1)
+        load_info = {
+            "ctl": latest_load.ctl, "atl": latest_load.atl, "tsb": latest_load.tsb,
+            "tsb_status": "Fresh (positive TSB)" if latest_load.tsb > 5 else "Optimal (near zero)" if latest_load.tsb > -10 else "Fatigued (negative TSB)" if latest_load.tsb > -20 else "Overreaching (very negative TSB)",
+            "recent_avg_high_stress_kj": round(avg_high, 1),
+            "recent_avg_peak_stress_kj": round(avg_peak, 1),
+        }
+
     context = {
         "user_profile": {
             "name": user.name, "age": today.year - user.birth_year if user.birth_year else None,
             "height_cm": user.height_cm, "sex": user.sex.value if hasattr(user.sex, 'value') else user.sex,
         },
-        "current_goal": {
+        "weight_goal": {
             "direction": goal.direction if goal else "maintain",
             "weekly_rate_kg": goal.weekly_rate_kg if goal else 0,
             "target_weight_kg": goal.target_weight_kg if goal else None,
             "target_date": goal.target_date.isoformat() if goal and goal.target_date else None,
+            "latest_weight_kg": latest_weight,
         } if goal else None,
-        "gap_analysis": gap_analysis,
+        "diet_targets": {
+            "approach": goal.diet_approach if goal and goal.diet_approach else None,
+            "eating_window": f"{goal.eating_window_start}-{goal.eating_window_end}" if goal and goal.eating_window_start else None,
+            "target_protein_g": goal.target_protein_g if goal else None,
+            "target_carbs_g": goal.target_carbs_g if goal else None,
+            "target_fat_g": goal.target_fat_g if goal else None,
+        } if goal else None,
+        "nutrition_gap_analysis": gap_analysis,
         "last_7_days": {
             "avg_consumed_kcal": round(avg_consumed, 0),
             "avg_burned_kcal": round(avg_burned, 0),
@@ -685,24 +781,33 @@ async def chat_coach(request: ChatRequest, db: AsyncSession = Depends(get_db), c
             "avg_fat_g": round(avg_fat, 0),
             "avg_hydration_ml": round(avg_hydration, 0),
             "total_activity_kcal": round(total_activity_kcal, 0),
-            "latest_weight_kg": latest_weight,
         },
-        "endurance": {
+        "fitness_signature": fitness_info,
+        "training_load": {
             "ltw_kj_per_day": round(ltw, 1),
             "stw_kj_per_day": round(stw, 1),
         },
+        "ctl_atl_tsb": load_info,
+        "active_fitness_goals": fitness_goal_gaps,
+        "stress_recommendations": stress_recs,
     }
 
     llm = LLMClient()
     system_prompt = (
         "You are Altus.Coach, an expert coaching assistant for endurance athletes. "
-        "You analyze the gap between the athlete's current data and their goals, then "
-        "provide actionable advice in these areas when relevant:\n"
-        "1. Nutrition adjustments (calories, macros, timing)\n"
-        "2. Training adjustments (volume, intensity, recovery)\n"
-        "3. Hydration and recovery\n"
-        "Be specific with numbers. Reference the gap analysis data. "
+        "You have access to the athlete's fitness signature (MPA=Max Power, FTP=Threshold, HIE=Anaerobic Capacity), "
+        "their current training load (CTL/ATL/TSB), their nutrition data, and their active fitness goals. "
+        "The fitness types are: strength, endurance, power, explosiveness, speed_skills, flexibility, breadth. "
+        "Each goal has an overload method (frequency/modality/intensity/duration), a validation metric, "
+        "a ramp rate (-2=offseason through +4=challenging), and a metric type (absolute or relative/bodyweight). "
+        "For relative goals (metric_type=relative), track w/kg progress — an athlete can improve w/kg by building power OR cutting weight. "
+        "For strength/power/explosiveness goals, Peak Stress (>2xFTP) is the primary stimulus. "
+        "For endurance goals, Low Stress (aerobic Z2) is the primary stimulus, with High Stress (tempo) as secondary. "
+        "Provide actionable, specific advice referencing the athlete's actual numbers. "
+        "Address all three areas when relevant: nutrition, training, recovery. "
         "Keep responses concise (2-4 short paragraphs). "
+        "When TSB is very negative and the athlete is still training hard, warn about overtraining. "
+        "When an athlete is cutting weight while pursuing power goals, provide both paths to their w/kg target. "
         f"Athlete data: {json.dumps(context)}"
     )
 
@@ -1209,12 +1314,23 @@ async def generate_week_plan(
             "lt1_power": physiology.lt1_power if physiology else None,
             "lt2_power": physiology.lt2_power if physiology else None,
         } if endurance_goal or physiology else None,
+        "fitness_signature": (await _get_fitness_signature_context(user_id, db)) if user_id else None,
     }
 
     llm = LLMClient()
     system_prompt = (
         "You are Altus.Goals, a goal-setting coach for endurance athletes. "
         "Help the user establish clear, measurable goals for body composition and performance. "
+        "You have access to their current fitness signature (MPA=max power, FTP=threshold, HIE=anaerobic capacity) "
+        "which shows their current capability and decay status. "
+        "The 7 fitness types are: strength (maximal force), endurance (sustained aerobic), "
+        "power (rate of high-intensity work), explosiveness (rate of force development), "
+        "speed_skills (technique at velocity), flexibility (range of motion), breadth (cross-discipline). "
+        "For each fitness goal, identify: fitness_type, overload_method (frequency/modality/intensity/duration), "
+        "validation_metric (what you'll track), current and target descriptions, metric values with units. "
+        "Use metric_type='absolute' for raw values (e.g. 280W) or 'relative' for bodyweight-dependent (e.g. 4.0 w/kg). "
+        "For relative goals, note that the athlete can improve by building power OR cutting weight. "
+        "Suggest a ramp_rate (-2=offseason through +4=challenging) appropriate for the goal type. "
         "Ask one or two questions at a time. When you have enough information, wrap your response "
         "with a structured proposal block using this format:\n"
         "---GOALS---\n"
@@ -1228,13 +1344,13 @@ async def generate_week_plan(
         '"hardest_section_duration_min": float|null, "sprint_capability_sec": int|null, '
         '"recovery_demand": "Low"|"Average"|"High"|null, "ramp_rate": float|null}\n'
         "---END---\n"
-        "If the user discusses a specific fitness goal (strength, endurance, power, explosiveness, "
-        "speed skills, flexibility, or breadth), include a fitness goal proposal:\n"
+        "If the user discusses a specific fitness goal, include:\n"
         "---FITNESS---\n"
         '{"fitness_type": "strength"|"endurance"|"power"|"explosiveness"|"speed_skills"|"flexibility"|"breadth", '
         '"overload_method": "frequency"|"modality"|"intensity"|"duration", '
         '"validation_metric": string, "current_description": string|null, "target_description": string, '
         '"metric_value": float|null, "target_value": float|null, "metric_unit": string|null, '
+        '"metric_type": "absolute"|"relative", '
         '"ramp_rate": int (0=maintenance, 1=slow, 2=moderate, 3=aggressive, 4=challenging, -1=taper, -2=offseason)}\n'
         "---END---\n"
         "Keep the conversational reply conversational, not JSON."
@@ -1320,6 +1436,7 @@ async def create_fitness_goal(
         metric_value=data.get("metric_value"),
         target_value=data.get("target_value"),
         metric_unit=data.get("metric_unit"),
+        metric_type=data.get("metric_type", "absolute"),
         target_date=target_date,
         ramp_rate=data.get("ramp_rate", 0),
         diet_approach=data.get("diet_approach"),
@@ -1347,7 +1464,7 @@ async def update_fitness_goal(
 
     for key in ["fitness_type", "overload_method", "validation_metric",
                  "current_description", "target_description",
-                 "metric_value", "target_value", "metric_unit",
+                 "metric_value", "target_value", "metric_unit", "metric_type",
                  "ramp_rate", "diet_approach", "status", "notes",
                  "eating_window_start", "eating_window_end"]:
         val = data.get(key)

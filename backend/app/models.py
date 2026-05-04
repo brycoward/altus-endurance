@@ -283,6 +283,7 @@ class FitnessGoal(SQLModel, table=True):
     metric_value: Optional[float] = None
     target_value: Optional[float] = None
     metric_unit: Optional[str] = None
+    metric_type: str = Field(default="absolute")
     target_date: Optional[date_type] = None
     ramp_rate: int = Field(default=0)
     diet_approach: Optional[str] = None

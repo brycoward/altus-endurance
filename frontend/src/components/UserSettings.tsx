@@ -425,7 +425,7 @@ function GoalsTab() {
   const [newGoal, setNewGoal] = useState({
     fitness_type: 'endurance', overload_method: 'intensity', validation_metric: '',
     current_description: '', target_description: '', metric_value: '', target_value: '',
-    metric_unit: '', target_date: '', ramp_rate: 0,
+    metric_unit: '', metric_type: 'absolute', target_date: '', ramp_rate: 0,
   });
 
   React.useEffect(() => { if (goalData) setGoalRate(goalData.weekly_rate_kg || 0); }, [goalData]);
@@ -440,7 +440,7 @@ function GoalsTab() {
       ...newGoal,
       metric_value: newGoal.metric_value ? parseFloat(newGoal.metric_value) : null,
       target_value: newGoal.target_value ? parseFloat(newGoal.target_value) : null,
-    }, { onSuccess: () => { setAddGoalOpen(false); setNewGoal({ fitness_type: 'endurance', overload_method: 'intensity', validation_metric: '', current_description: '', target_description: '', metric_value: '', target_value: '', metric_unit: '', target_date: '', ramp_rate: 0 }); } });
+    }, { onSuccess: () => { setAddGoalOpen(false); setNewGoal({ fitness_type: 'endurance', overload_method: 'intensity', validation_metric: '', current_description: '', target_description: '', metric_value: '', target_value: '', metric_unit: '', metric_type: 'absolute', target_date: '', ramp_rate: 0 }); } });
   };
 
   const handleRampChange = (goalId: number, ramp_rate: number) => {
@@ -570,6 +570,16 @@ function GoalsTab() {
                   <label className="text-[10px] font-bold text-slate-500 uppercase">Unit</label>
                   <input type="text" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-3 text-slate-100 text-sm" value={newGoal.metric_unit} onChange={e => setNewGoal({...newGoal, metric_unit: e.target.value})} placeholder="kg, W, sec" />
                 </div>
+              </div>
+              <div>
+                <label className="text-[10px] font-bold text-slate-500 uppercase">Metric Type</label>
+                <div className="flex bg-slate-950 border border-slate-800 rounded-xl overflow-hidden">
+                  <button type="button" onClick={() => setNewGoal({...newGoal, metric_type: 'absolute'})}
+                    className={clsx("flex-1 py-2.5 text-xs font-black uppercase tracking-widest transition-all", newGoal.metric_type === 'absolute' ? "bg-emerald-500 text-slate-950" : "text-slate-400 hover:text-slate-200")}>Absolute</button>
+                  <button type="button" onClick={() => setNewGoal({...newGoal, metric_type: 'relative'})}
+                    className={clsx("flex-1 py-2.5 text-xs font-black uppercase tracking-widest transition-all", newGoal.metric_type === 'relative' ? "bg-emerald-500 text-slate-950" : "text-slate-400 hover:text-slate-200")}>Per Bodyweight</button>
+                </div>
+                <p className="text-[8px] font-bold text-slate-600 mt-1">{newGoal.metric_type === 'relative' ? 'w/kg, %BW etc. — target depends on bodyweight' : 'Raw value — independent of bodyweight'}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>

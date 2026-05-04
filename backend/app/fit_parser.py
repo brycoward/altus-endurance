@@ -56,5 +56,6 @@ class FitParser:
         
         metrics["total_kj"] = metrics["z1_kj"] + metrics["z2_kj"] + metrics["z3_kj"] + metrics["z4_kj"]
         metrics["total_duration_min"] = len(self.df) // 60
+        metrics["max_instantaneous_power"] = float(self.df['power'].max()) if len(self.df) > 0 else 0.0
         
         return metrics

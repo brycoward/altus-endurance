@@ -117,7 +117,7 @@ export function Dashboard() {
             <div className="flex gap-4">
                <div className="flex items-center gap-2">
                  <div className="w-3 h-3 bg-amber-500 rounded-full" />
-                 <span className="text-[10px] font-bold text-[rgb(var(--text-muted))] uppercase">Weight (kg)</span>
+                  <span className="text-[10px] font-bold text-[rgb(var(--text-muted))] uppercase">Weight ({u.label.weight})</span>
                </div>
             </div>
           </div>

@@ -76,6 +76,8 @@ class HealthUpdate(BaseModel):
     sleep_hours: Optional[float] = None
     sleep_quality: Optional[int] = None
     sleep_score: Optional[int] = None
+    timestamp: Optional[datetime] = None
+    source: Optional[str] = None
 
 class GoalUpdate(BaseModel):
     direction: GoalDirection

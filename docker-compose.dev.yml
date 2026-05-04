@@ -25,7 +25,7 @@ services:
       - POSTGRES_DSN=postgresql+asyncpg://altus:${POSTGRES_PASSWORD}@db:5432/altus
       - REDIS_URL=redis://redis:6379/0
       - SECRET_KEY=${SECRET_KEY}
-      - LLM_PROVIDER=anthropic
+      - LLM_PROVIDER=${LLM_PROVIDER}
       - LLM_API_KEY=${LLM_API_KEY}
       - FRONTEND_ORIGIN=${FRONTEND_ORIGIN:-http://localhost:5174}
       - DEBUG_REQUESTS=${DEBUG_REQUESTS:-false}
@@ -65,21 +65,23 @@ services:
       - db
       - redis
 
-#   telegram_bot:
-#     build: ./backend
-#     container_name: altus_endurance_bot
-#     command: python telegram_bot.py
-#     volumes:
-#       - ./backend:/app
-#       - ./digests:/digests
-#     environment:
-#       - POSTGRES_DSN=postgresql+asyncpg://altus:altus@db:5432/altus
-#       - REDIS_URL=redis://redis:6379/0
-#       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
-#     depends_on:
-#       - backend
-#       - db
-#       - redis
+  telegram_bot:
+    build: ./backend
+    container_name: altus_endurance_bot
+    command: python telegram_bot.py
+    volumes:
+      - ./backend:/app
+      - ./digests:/digests
+    environment:
+      - POSTGRES_DSN=postgresql+asyncpg://altus:${POSTGRES_PASSWORD}@db:5432/altus
+      - REDIS_URL=redis://redis:6379/0
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - LLM_PROVIDER=${LLM_PROVIDER}
+      - LLM_API_KEY=${LLM_API_KEY}
+    depends_on:
+      - backend
+      - db
+      - redis
 
   frontend:
     build: ./frontend

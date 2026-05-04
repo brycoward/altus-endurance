@@ -1061,11 +1061,11 @@ function AddBiometricsEntry({ dateStr, onCancel }: { dateStr?: string, onCancel:
   const handleSave = () => {
     const [hours, minutes] = data.time.split(':');
     const timestamp = dateStr 
-      ? new Date(`${dateStr}T${hours}:${minutes}:00Z`).toISOString()
+      ? new Date(`${dateStr}T${hours}:${minutes}:00`).toISOString()
       : new Date().toISOString(); 
 
     const finalData: any = { timestamp };
-    if (data.weight_kg !== null) finalData.weight_kg = data.weight_kg;
+    if (data.weight_kg !== null) finalData.weight_kg = u.unit === 'imperial' ? u.toMetric.weight(data.weight_kg) : data.weight_kg;
     if (data.rhr !== null) finalData.rhr = data.rhr;
     if (data.hrv !== null) finalData.hrv = data.hrv;
     if (data.sleep_score !== null) finalData.sleep_score = data.sleep_score;
@@ -1170,7 +1170,10 @@ function BiometricsEntry({ health }: { health: any }) {
   };
 
   if (isEditing) {
-    const timeVal = new Date(editData.timestamp).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const d = new Date(editData.timestamp);
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mm = String(d.getMinutes()).padStart(2, '0');
+    const timeVal = `${hh}:${mm}`;
     
     return (
       <div className="bg-[rgb(var(--bg-secondary))] border border-indigo-500/30 p-6 rounded-3xl space-y-6 mb-4 animate-in slide-in-from-top-4 duration-200">
@@ -1195,9 +1198,9 @@ function BiometricsEntry({ health }: { health: any }) {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
           <BiometricInput 
             label="Weight" 
-            unit="kg"
-            value={editData.weight_kg} 
-            onChange={val => setEditData({...editData, weight_kg: val})}
+            unit={u.label.weight}
+            value={u.unit === 'imperial' ? u.toUnit.weight(editData.weight_kg || 0) : editData.weight_kg} 
+            onChange={val => setEditData({...editData, weight_kg: u.unit === 'imperial' ? u.toMetric.weight(val || 0) : val})}
             icon={Scale}
             step={0.1}
             color="text-blue-400"

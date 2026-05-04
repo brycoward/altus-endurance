@@ -7,8 +7,9 @@ export function useUnits() {
     unit,
 
     formatWeight: (kg: number): string => {
-      if (unit === 'imperial') return `${(kg * 2.20462).toFixed(1)} lbs`;
-      return `${kg.toFixed(1)} kg`;
+      const val = isNaN(Number(kg)) ? 0 : Number(kg);
+      if (unit === 'imperial') return `${(val * 2.20462).toFixed(1)} lbs`;
+      return `${val.toFixed(1)} kg`;
     },
 
     formatHeight: (cm: number): string => {

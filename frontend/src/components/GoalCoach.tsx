@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { api } from '../api/client';
-import { useGoal, useEnduranceGoal, useUpdateGoal, useUpdateEnduranceGoal } from '../hooks/useAltus';
+import { useGoal, useEnduranceGoal, useUpdateGoal, useUpdateEnduranceGoal, useCreateFitnessGoal } from '../hooks/useAltus';
 import { clsx } from 'clsx';
 import { Bot, User, Target, Loader2, Check, ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -18,12 +18,14 @@ export function GoalCoach() {
   const [isLoading, setIsLoading] = useState(false);
   const [proposedGoal, setProposedGoal] = useState<any>(null);
   const [proposedEnduranceGoal, setProposedEnduranceGoal] = useState<any>(null);
+  const [proposedFitnessGoal, setProposedFitnessGoal] = useState<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { data: currentGoal } = useGoal();
   const { data: currentEnduranceGoal } = useEnduranceGoal();
   const updateGoal = useUpdateGoal();
   const updateEnduranceGoal = useUpdateEnduranceGoal();
+  const createFitnessGoal = useCreateFitnessGoal();
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -40,6 +42,7 @@ export function GoalCoach() {
     setInput('');
     setProposedGoal(null);
     setProposedEnduranceGoal(null);
+    setProposedFitnessGoal(null);
     setIsLoading(true);
 
     try {
@@ -47,6 +50,7 @@ export function GoalCoach() {
       setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: 'coach', text: resp.reply }]);
       if (resp.goal_data) setProposedGoal(resp.goal_data);
       if (resp.endurance_goal_data) setProposedEnduranceGoal(resp.endurance_goal_data);
+      if (resp.fitness_goal_data) setProposedFitnessGoal(resp.fitness_goal_data);
     } catch (err) {
       console.error('Goal coach error:', err);
       setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: 'coach', text: 'Sorry, I ran into an error. Please try again.' }]);
@@ -72,6 +76,13 @@ export function GoalCoach() {
   const handleSaveEndurance = () => {
     if (!proposedEnduranceGoal) return;
     updateEnduranceGoal.mutate(proposedEnduranceGoal);
+  };
+
+  const handleSaveFitness = () => {
+    if (!proposedFitnessGoal) return;
+    createFitnessGoal.mutate(proposedFitnessGoal, {
+      onSuccess: () => setProposedFitnessGoal(null),
+    });
   };
 
   return (
@@ -160,6 +171,31 @@ export function GoalCoach() {
               className="w-full py-2.5 bg-indigo-500 text-slate-950 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-indigo-400 transition-colors disabled:opacity-50"
             >
               {updateEnduranceGoal.isLoading ? 'Saving...' : 'Save Performance Goal'}
+            </button>
+          </div>
+        )}
+
+        {/* Proposed Fitness Goal Card */}
+        {proposedFitnessGoal && (
+          <div className="p-4 bg-[rgb(var(--bg-secondary))] border border-blue-500/50 rounded-2xl space-y-3 animate-in slide-in-from-bottom-2 duration-300">
+            <div className="flex items-center gap-2 text-blue-400">
+              <Check size={14} />
+              <span className="text-xs font-black uppercase tracking-widest">Proposed Fitness Goal</span>
+            </div>
+            <div className="text-sm text-[rgb(var(--text-primary))] space-y-1">
+              <p>Type: <strong>{proposedFitnessGoal.fitness_type?.replace(/_/g, ' ')}</strong></p>
+              <p>Overload: <strong>{proposedFitnessGoal.overload_method}</strong></p>
+              <p>Metric: <strong>{proposedFitnessGoal.validation_metric}</strong></p>
+              {proposedFitnessGoal.current_description && <p>Current: <strong>{proposedFitnessGoal.current_description}</strong></p>}
+              <p>Target: <strong>{proposedFitnessGoal.target_description}</strong></p>
+              {proposedFitnessGoal.metric_value && <p>Values: <strong>{proposedFitnessGoal.metric_value} → {proposedFitnessGoal.target_value} {proposedFitnessGoal.metric_unit || ''}</strong></p>}
+            </div>
+            <button
+              onClick={handleSaveFitness}
+              disabled={createFitnessGoal.isLoading}
+              className="w-full py-2.5 bg-blue-500 text-slate-950 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-400 transition-colors disabled:opacity-50"
+            >
+              {createFitnessGoal.isLoading ? 'Saving...' : 'Save Fitness Goal'}
             </button>
           </div>
         )}

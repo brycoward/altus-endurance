@@ -45,7 +45,7 @@ export function useUpdateUser() {
 export function useUpdateGoal() {
   const queryClient = useQueryClient();
   return useMutation(
-    (data: { direction: string; weekly_rate_kg: number; target_weight_kg?: number | null; target_date?: string | null; body_fat_pct_target?: number | null; notes?: string | null }) => api.updateGoal(data),
+    (data: { direction: string; weekly_rate_kg: number; target_weight_kg?: number | null; target_date?: string | null; body_fat_pct_target?: number | null; notes?: string | null; diet_approach?: string | null; eating_window_start?: string | null; eating_window_end?: string | null; target_protein_g?: number | null; target_carbs_g?: number | null; target_fat_g?: number | null; target_fiber_g?: number | null; target_hydration_ml?: number | null }) => api.updateGoal(data),
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['goal']);
@@ -299,4 +299,34 @@ export function useFitnessStress(days: number = 90) {
   return useQuery(['fitnessStress', days], () => api.getFitnessStress(days), {
     refetchInterval: 60000,
   });
+}
+
+export function useFitnessGoals() {
+  return useQuery(['fitnessGoals'], () => api.getFitnessGoals(), {
+    refetchInterval: 30000,
+  });
+}
+
+export function useCreateFitnessGoal() {
+  const queryClient = useQueryClient();
+  return useMutation(
+    (data: any) => api.createFitnessGoal(data),
+    { onSuccess: () => { queryClient.invalidateQueries(['fitnessGoals']); } }
+  );
+}
+
+export function useUpdateFitnessGoal() {
+  const queryClient = useQueryClient();
+  return useMutation(
+    ({ goalId, data }: { goalId: number; data: any }) => api.updateFitnessGoal(goalId, data),
+    { onSuccess: () => { queryClient.invalidateQueries(['fitnessGoals']); } }
+  );
+}
+
+export function useDeleteFitnessGoal() {
+  const queryClient = useQueryClient();
+  return useMutation(
+    (goalId: number) => api.deleteFitnessGoal(goalId),
+    { onSuccess: () => { queryClient.invalidateQueries(['fitnessGoals']); } }
+  );
 }

@@ -88,6 +88,12 @@ export const api = {
   getFitnessChronic: (days: number = 90) => client.get('/api/fitness/chronic', { params: { days } }).then(r => r.data),
   getFitnessStress: (days: number = 90) => client.get('/api/fitness/stress', { params: { days } }).then(r => r.data),
 
+  // Fitness Goals
+  getFitnessGoals: () => client.get('/api/goals/fitness').then(r => r.data),
+  createFitnessGoal: (data: any) => client.post('/api/goals/fitness', data).then(r => r.data),
+  updateFitnessGoal: (goalId: number, data: any) => client.put(`/api/goals/fitness/${goalId}`, data).then(r => r.data),
+  deleteFitnessGoal: (goalId: number) => client.delete(`/api/goals/fitness/${goalId}`).then(r => r.data),
+
   // Data Portability
   getBaseUrl: () => API_URL,
   exportJson: () => client.get('/api/data/export/json', { responseType: 'blob' }).then(r => r.data),

@@ -42,7 +42,3 @@ body {
   --brand-secondary: rgb(var(--purple));
   --brand-accent: rgb(var(--crimson));
 }
-
-img[src*="logo.png"] {
-  background-color: transparent !important;
-}

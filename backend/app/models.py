@@ -63,6 +63,7 @@ class User(SQLModel, table=True):
     planned_workouts: list["PlannedWorkout"] = Relationship(back_populates="user")
     physiology: Optional["UserPhysiology"] = Relationship(back_populates="user")
     fitness_signature: Optional["FitnessSignature"] = Relationship(back_populates="user")
+    fitness_goals: list["FitnessGoal"] = Relationship(back_populates="user")
 
 class UserGoal(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
@@ -75,6 +76,14 @@ class UserGoal(SQLModel, table=True):
     target_date: Optional[date_type] = None
     body_fat_pct_target: Optional[float] = None
     notes: Optional[str] = None
+    diet_approach: Optional[str] = None
+    eating_window_start: Optional[str] = None
+    eating_window_end: Optional[str] = None
+    target_protein_g: Optional[float] = None
+    target_carbs_g: Optional[float] = None
+    target_fat_g: Optional[float] = None
+    target_fiber_g: Optional[float] = None
+    target_hydration_ml: Optional[float] = None
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     user: User = Relationship(back_populates="goals")
@@ -262,3 +271,26 @@ class DailyLoad(SQLModel, table=True):
     ctl: float = Field(default=0.0)
     atl: float = Field(default=0.0)
     tsb: float = Field(default=0.0)
+
+class FitnessGoal(SQLModel, table=True):
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: uuid.UUID = Field(foreign_key="user.id")
+    fitness_type: str
+    overload_method: str = Field(default="intensity")
+    validation_metric: str
+    current_description: Optional[str] = None
+    target_description: str
+    metric_value: Optional[float] = None
+    target_value: Optional[float] = None
+    metric_unit: Optional[str] = None
+    target_date: Optional[date_type] = None
+    ramp_rate: int = Field(default=0)
+    diet_approach: Optional[str] = None
+    eating_window_start: Optional[str] = None
+    eating_window_end: Optional[str] = None
+    status: str = Field(default="active")
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+
+    user: User = Relationship(back_populates="fitness_goals")

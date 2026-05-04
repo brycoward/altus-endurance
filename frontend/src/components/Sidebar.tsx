@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useAuth } from '../context/AuthContext';
+import { Logo } from './Logo';
 
 interface SidebarProps {
   activeView: string;
@@ -54,32 +55,8 @@ export function Sidebar({ activeView, onViewChange, isCollapsed, setIsCollapsed 
       isCollapsed ? "w-20" : "w-64"
     )}>
       <div className="p-6 flex items-center justify-between border-b border-[rgb(var(--border))]">
-        {!isCollapsed && (
-          <div className="flex items-center gap-3">
-             <div className="w-10 h-10 flex items-center justify-center bg-transparent" style={{ backgroundColor: 'transparent' }}>
-                <img 
-                  src="/logo.png?v=3" 
-                  alt="Altus" 
-                  className="w-full h-full object-contain" 
-                  style={{ backgroundColor: 'transparent' }}
-                />
-             </div>
-            <div>
-              <div className="text-sm font-black text-[rgb(var(--text-primary))] uppercase tracking-tighter">Altus</div>
-              <div className="text-[8px] font-bold text-[rgb(var(--text-muted))] uppercase tracking-widest">Performance</div>
-            </div>
-          </div>
-        )}
-        {isCollapsed && (
-          <div className="w-10 h-10 mx-auto bg-transparent" style={{ backgroundColor: 'transparent' }}>
-            <img 
-              src="/logo.png?v=3" 
-              alt="Altus" 
-              className="w-full h-full object-contain" 
-              style={{ backgroundColor: 'transparent' }}
-            />
-          </div>
-        )}
+        {!isCollapsed && <Logo size={40} />}
+        {isCollapsed && <Logo size={40} collapsed />}
       </div>
 
       {/* Main Nav */}

@@ -42,8 +42,8 @@ export const RegisterPage: React.FC<{ onLoginClick: () => void }> = ({ onLoginCl
           <div className="absolute -top-24 -left-24 w-48 h-48 bg-emerald-500/20 rounded-full blur-3xl" />
           
           <div className="relative text-center">
-             <div className="w-16 h-16 flex items-center justify-center mx-auto mb-6">
-                <img src="/logo.png?v=3" alt="Altus Logo" className="w-full h-full object-contain" />
+             <div className="w-20 h-20 overflow-hidden rounded-full bg-slate-800 border border-slate-700 shadow-xl p-1 mx-auto mb-6">
+                <img src="/Altus_logo.png" alt="Altus" className="w-full h-full object-contain" />
             </div>
             
             <h2 className="text-2xl font-bold text-white mb-2">Registration Successful!</h2>

@@ -13,7 +13,7 @@ from app.models import (
     User, UserGoal, FoodLog, ActivityLog, HealthMetric, 
     DailySnapshot, MealSlot, GoalDirection, SexEnum,
     EnduranceGoal, WeeklyPlanner, PlannedWorkout, ZoneMetrics, UserPhysiology,
-    FitnessSignature, ActivityStress, DailyLoad
+    FitnessSignature, ActivityStress, DailyLoad, FitnessGoal
 )
 from app.budget import recalculate_daily_snapshot
 from pydantic import BaseModel, validator
@@ -84,6 +84,14 @@ class GoalUpdate(BaseModel):
     target_date: Optional[str] = None
     body_fat_pct_target: Optional[float] = None
     notes: Optional[str] = None
+    diet_approach: Optional[str] = None
+    eating_window_start: Optional[str] = None
+    eating_window_end: Optional[str] = None
+    target_protein_g: Optional[float] = None
+    target_carbs_g: Optional[float] = None
+    target_fat_g: Optional[float] = None
+    target_fiber_g: Optional[float] = None
+    target_hydration_ml: Optional[float] = None
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None
@@ -339,6 +347,14 @@ async def update_goal(data: GoalUpdate, db: AsyncSession = Depends(get_db), curr
         target_date=target_date,
         body_fat_pct_target=data.body_fat_pct_target,
         notes=data.notes,
+        diet_approach=data.diet_approach,
+        eating_window_start=data.eating_window_start,
+        eating_window_end=data.eating_window_end,
+        target_protein_g=data.target_protein_g,
+        target_carbs_g=data.target_carbs_g,
+        target_fat_g=data.target_fat_g,
+        target_fiber_g=data.target_fiber_g,
+        target_hydration_ml=data.target_hydration_ml,
         updated_at=datetime.utcnow()
     )
     db.add(goal)
@@ -1212,6 +1228,15 @@ async def generate_week_plan(
         '"hardest_section_duration_min": float|null, "sprint_capability_sec": int|null, '
         '"recovery_demand": "Low"|"Average"|"High"|null, "ramp_rate": float|null}\n'
         "---END---\n"
+        "If the user discusses a specific fitness goal (strength, endurance, power, explosiveness, "
+        "speed skills, flexibility, or breadth), include a fitness goal proposal:\n"
+        "---FITNESS---\n"
+        '{"fitness_type": "strength"|"endurance"|"power"|"explosiveness"|"speed_skills"|"flexibility"|"breadth", '
+        '"overload_method": "frequency"|"modality"|"intensity"|"duration", '
+        '"validation_metric": string, "current_description": string|null, "target_description": string, '
+        '"metric_value": float|null, "target_value": float|null, "metric_unit": string|null, '
+        '"ramp_rate": int (0=maintenance, 1=slow, 2=moderate, 3=aggressive, 4=challenging, -1=taper, -2=offseason)}\n'
+        "---END---\n"
         "Keep the conversational reply conversational, not JSON."
     )
 
@@ -1239,12 +1264,121 @@ async def generate_week_plan(
             pass
         reply = reply.split("---ENDURANCE---")[0].strip()
 
+    fitness_goal_data = None
+    if "---FITNESS---" in reply:
+        parts = reply.split("---FITNESS---")
+        try:
+            fitness_json = parts[1].split("---END---")[0].strip()
+            fitness_goal_data = json.loads(fitness_json)
+        except (IndexError, json.JSONDecodeError):
+            pass
+        reply = reply.split("---FITNESS---")[0].strip()
+
     return {
         "source": "altus.goals",
         "reply": reply,
         "goal_data": goal_data,
         "endurance_goal_data": endurance_data,
+        "fitness_goal_data": fitness_goal_data,
     }
+
+
+@router.get("/goals/fitness")
+async def list_fitness_goals(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    user_id = current_user.id
+    stmt = select(FitnessGoal).where(
+        FitnessGoal.user_id == user_id
+    ).order_by(FitnessGoal.created_at.desc())
+    goals = (await db.execute(stmt)).scalars().all()
+    return goals
+
+
+@router.post("/goals/fitness")
+async def create_fitness_goal(
+    data: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    user_id = current_user.id
+    target_date = None
+    if data.get("target_date"):
+        try:
+            target_date = date_type.fromisoformat(data["target_date"])
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid target_date format")
+
+    goal = FitnessGoal(
+        user_id=user_id,
+        fitness_type=data.get("fitness_type", ""),
+        overload_method=data.get("overload_method", "intensity"),
+        validation_metric=data.get("validation_metric", ""),
+        current_description=data.get("current_description"),
+        target_description=data.get("target_description", ""),
+        metric_value=data.get("metric_value"),
+        target_value=data.get("target_value"),
+        metric_unit=data.get("metric_unit"),
+        target_date=target_date,
+        ramp_rate=data.get("ramp_rate", 0),
+        diet_approach=data.get("diet_approach"),
+        eating_window_start=data.get("eating_window_start"),
+        eating_window_end=data.get("eating_window_end"),
+        status=data.get("status", "active"),
+        notes=data.get("notes"),
+    )
+    db.add(goal)
+    await db.commit()
+    await db.refresh(goal)
+    return goal
+
+
+@router.put("/goals/fitness/{goal_id}")
+async def update_fitness_goal(
+    goal_id: int,
+    data: dict,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    goal = await db.get(FitnessGoal, goal_id)
+    if not goal or goal.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Goal not found")
+
+    for key in ["fitness_type", "overload_method", "validation_metric",
+                 "current_description", "target_description",
+                 "metric_value", "target_value", "metric_unit",
+                 "ramp_rate", "diet_approach", "status", "notes",
+                 "eating_window_start", "eating_window_end"]:
+        val = data.get(key)
+        if val is not None:
+            setattr(goal, key, val)
+
+    if data.get("target_date") is not None:
+        if data["target_date"]:
+            goal.target_date = date_type.fromisoformat(data["target_date"])
+        else:
+            goal.target_date = None
+
+    goal.updated_at = datetime.utcnow()
+    db.add(goal)
+    await db.commit()
+    await db.refresh(goal)
+    return goal
+
+
+@router.delete("/goals/fitness/{goal_id}")
+async def delete_fitness_goal(
+    goal_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    goal = await db.get(FitnessGoal, goal_id)
+    if not goal or goal.user_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Goal not found")
+    await db.delete(goal)
+    await db.commit()
+    return {"status": "deleted"}
 
 
 @router.get("/endurance/goal")
